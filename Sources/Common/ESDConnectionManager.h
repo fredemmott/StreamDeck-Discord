@@ -40,6 +40,7 @@ public:
 	// API to communicate with the Stream Deck application
 	void SetTitle(const std::string &inTitle, const std::string& inContext, ESDSDKTarget inTarget);
 	void SetImage(const std::string &inBase64ImageString, const std::string& inContext, ESDSDKTarget inTarget);
+	void SendToPropertyInspector(const std::string &inAction, const std::string& inContext, const json& inPayload);
 	void ShowAlertForContext(const std::string& inContext);
 	void ShowOKForContext(const std::string& inContext);
 	void SetSettings(const json &inSettings, const std::string& inContext);

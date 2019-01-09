@@ -30,6 +30,8 @@ public:
 	
 	virtual void DeviceDidConnect(const std::string& inDeviceID, const json &inDeviceInfo) = 0;
 	virtual void DeviceDidDisconnect(const std::string& inDeviceID) = 0;
+
+	virtual void SendToPlugin(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDevice) = 0;
 	
 protected:
 	ESDConnectionManager *mConnectionManager = nullptr;

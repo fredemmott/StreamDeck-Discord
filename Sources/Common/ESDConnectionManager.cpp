@@ -103,6 +103,10 @@ void ESDConnectionManager::OnMessage(websocketpp::connection_hdl, WebsocketClien
 			{
 				mPlugin->DeviceDidDisconnect(deviceID);
 			}
+			else if (event == kESDSDKEventSendToPlugin)
+			{
+				mPlugin->SendToPlugin(action, context, payload, deviceID);
+			}
 		}
 		catch (...)
 		{
@@ -203,6 +207,18 @@ void ESDConnectionManager::SetImage(const std::string &inBase64ImageString, cons
 		payload[kESDSDKPayloadImage] = "data:image/png;base64," + inBase64ImageString;
 	jsonObject[kESDSDKCommonPayload] = payload;
 	
+	websocketpp::lib::error_code ec;
+	mWebsocket.send(mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
+
+void ESDConnectionManager::SendToPropertyInspector(const std::string & inAction, const std::string & inContext, const json & inPayload)
+{
+	json jsonObject;
+	jsonObject[kESDSDKCommonEvent] = kESDSDKEventSendToPropertyInspector;
+	jsonObject[kESDSDKCommonContext] = inContext;
+	jsonObject[kESDSDKCommonAction] = inAction;
+	jsonObject[kESDSDKCommonPayload] = inPayload;
+
 	websocketpp::lib::error_code ec;
 	mWebsocket.send(mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
 }
