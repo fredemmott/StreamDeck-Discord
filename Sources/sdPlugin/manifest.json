@@ -1,24 +1,42 @@
 {
   "Actions": [
     {
-      "Icon": "default.png", 
-      "Name": "Mic Mute",
+      "Icon": "discord-mic-off", 
       "States": [
         {
-          "Image": "default.png"
-        }
+          "Image": "discord-mic-on"
+        },
+		{
+		  "Image": "discord-mic-off"
+		}
       ],
       "SupportedInMultiActions": false,
-	  "Name": "Mic Mute",
-      "Tooltip": "This action toggles the system microphone mute",
-      "UUID": "com.fredemmott.micmutetoggle.toggle"
+	  "Name": "Discord Self-Mute",
+      "Tooltip": "Toggle Self-Mute in Discord",
+      "UUID": "com.fredemmott.discord.mute"
+    },
+	{
+      "Icon": "discord-deafen-off", 
+      "States": [
+        {
+          "Image": "discord-deafen-off"
+        },
+		{
+		  "Image": "discord-deafen-on"
+		}
+      ],
+      "SupportedInMultiActions": false,
+	  "Name": "Discord Self-Deafen",
+      "Tooltip": "Toggle Self-Mute in Deafen",
+      "UUID": "com.fredemmott.discord.deafen"
     }
   ], 
   "Author": "Fred Emmott", 
-  "CodePathWin": "sdmicmute.exe", 
-  "Description": "Toggle the system microphone mute setting.",
-  "Name": "Mic Mute", 
-  "Icon": "mic-unknown.png", 
+  "CodePathWin": "sddiscord.exe",
+  "PropertyInspectorPath": "propertyinspector/index.html",
+  "Description": "Toggle Discord Mute and Deafen.",
+  "Name": "Discord Mute/Deafen", 
+  "Icon": "discord-mic-off", 
   "Version": "1.0",
   "OS": [
     {

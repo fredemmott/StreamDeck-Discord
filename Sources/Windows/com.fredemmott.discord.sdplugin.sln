@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "com.elgato.cpu.sdPlugin", "com.elgato.cpu.sdPlugin.vcxproj", "{F76362AC-339A-4F56-8C7B-D73A560670C4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "com.fredemmott.discord.sdplugin", "com.elgato.cpu.sdPlugin.vcxproj", "{F76362AC-339A-4F56-8C7B-D73A560670C4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

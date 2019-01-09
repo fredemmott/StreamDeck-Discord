@@ -12,161 +12,201 @@
 
 #include "MyStreamDeckPlugin.h"
 #include <atomic>
+#include <mutex>
 
-#include "MicMuteToggle.h"
-#include "Windows/resource.h"
-#include <wincrypt.h>
 #include "Common/ESDConnectionManager.h"
+#include "Common/EPLJSONUtils.h"
+#include "DiscordClient.h"
 
 namespace {
-	std::string ResourceAsBase64(int resource) {
-		const auto res = FindResource(nullptr, MAKEINTRESOURCE(resource), RT_RCDATA);
-		if (!res) {
-			return "";
-		}
-		const auto resHandle = LoadResource(NULL, res);
-		if (!resHandle) {
-			return "";
-		}
-		const BYTE* data = (BYTE*)LockResource(resHandle);
-		const auto size = SizeofResource(NULL, res);
+	const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
+	const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
+}
 
-		DWORD b64size;
-		// Find size
-		CryptBinaryToStringA(
-			data,
-			size,
-			CRYPT_STRING_BASE64,
-			nullptr,
-			&b64size
-		);
-		char* b64data = new char[b64size];
-		CryptBinaryToStringA(
-			data,
-			size,
-			CRYPT_STRING_BASE64,
-			b64data,
-			&b64size
-		);
-		auto ret = std::string(b64data, b64size);
-		delete b64data;
-		return ret;
-	}
-};
-
-class CallBackTimer
-{
-public:
-    CallBackTimer() :_execute(false) { }
-
-    ~CallBackTimer()
-    {
-        if( _execute.load(std::memory_order_acquire) )
-        {
-            stop();
-        };
-    }
-
-    void stop()
-    {
-        _execute.store(false, std::memory_order_release);
-        if(_thd.joinable())
-            _thd.join();
-    }
-
-    void start(int interval, std::function<void(void)> func)
-    {
-        if(_execute.load(std::memory_order_acquire))
-        {
-            stop();
-        };
-        _execute.store(true, std::memory_order_release);
-        _thd = std::thread([this, interval, func]()
-        {
-			CoInitialize(NULL); // initialize COM again for the timer thread
-            while (_execute.load(std::memory_order_acquire))
-            {
-                func();
-                std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-            }
-        });
-    }
-
-    bool is_running() const noexcept
-    {
-        return (_execute.load(std::memory_order_acquire) && _thd.joinable());
-    }
-
-private:
-    std::atomic<bool> _execute;
-    std::thread _thd;
-};
+static_assert(_MSVC_LANG > 201402L, "C++17 not enabled in _MSVC_LANG");
+static_assert(_HAS_CXX17, "C++17 feature flag not enabled");
 
 MyStreamDeckPlugin::MyStreamDeckPlugin()
 {
-	mMutedImage = ResourceAsBase64(IDM_MUTED);
-	mUnmutedImage = ResourceAsBase64(IDM_UNMUTED);
-	CoInitialize(NULL); // initialize COM for the main thread
-	mTimer = new CallBackTimer();
-	mTimer->start(500, [this]()
-	{
-		this->UpdateTimer();
-	});
+	mClient = nullptr;
 }
 
 MyStreamDeckPlugin::~MyStreamDeckPlugin()
 {
-	if (mTimer != nullptr)
-	{
-		mTimer->stop();
-
-		delete mTimer;
-		mTimer = nullptr;
-	}
+	delete mClient;
 }
 
-void MyStreamDeckPlugin::UpdateTimer()
+void MyStreamDeckPlugin::UpdateState(bool isMuted, bool isDeafened)
 {
-	//
-	// Warning: UpdateTimer() is running in the timer thread
-	//
 	if(mConnectionManager != nullptr)
 	{
-		mVisibleContextsMutex.lock();
-		const bool isMuted = IsMuted();
-		for (const std::string& context : mVisibleContexts)
+		std::scoped_lock lock(mVisibleContextsMutex);
+		for (const auto& pair: mVisibleContexts)
 		{
-			mConnectionManager->SetImage(isMuted ? mMutedImage : mUnmutedImage, context, kESDSDKTarget_HardwareAndSoftware);
+			const auto& context = pair.first;
+			const auto& action = pair.second;
+			if (action == MUTE_ACTION_ID) {
+				mConnectionManager->SetState((isMuted || isDeafened) ? 1 : 0, context);
+				continue;
+			}
+			if (action == DEAFEN_ACTION_ID) {
+				mConnectionManager->SetState(isDeafened ? 1 : 0, context);
+				continue;
+			}
 		}
-		mVisibleContextsMutex.unlock();
 	}
 }
 
 void MyStreamDeckPlugin::KeyDownForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
-	SetMuted(MuteBehavior::TOGGLE);
-	UpdateTimer();
 }
 
 void MyStreamDeckPlugin::KeyUpForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
-	// Nothing to do
+	if (!mClient) {
+		return;
+	}
+	const auto clientState = mClient->getState().rpcState;
+	switch (clientState) {
+	case DiscordClient::RpcState::READY:
+		break;
+	case DiscordClient::RpcState::CONNECTION_FAILED:
+		ConnectToDiscord();
+	case DiscordClient::RpcState::AUTHENTICATION_FAILED:
+	case DiscordClient::RpcState::CONNECTING:
+	case DiscordClient::RpcState::REQUESTING_ACCESS_TOKEN:
+	case DiscordClient::RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN:
+		mConnectionManager->ShowAlertForContext(inContext);
+		return;
+	}
+	const auto oldState = EPLJSONUtils::GetIntByName(inPayload, "state");
+	if (inAction == MUTE_ACTION_ID) {
+		mClient->setIsMuted(oldState == 0);
+		return;
+	}
+	if (inAction == DEAFEN_ACTION_ID) {
+		mClient->setIsDeafened(oldState == 0);
+		return;
+	}
 }
 
 void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
 	// Remember the context
-	mVisibleContextsMutex.lock();
-	mVisibleContexts.insert(inContext);
-	mVisibleContextsMutex.unlock();
+	{
+		std::scoped_lock lock(mVisibleContextsMutex);
+		mVisibleContexts[inContext] = inAction;
+	}
+	if (!mClient) {
+		dbgprintf("Loaded settings: %s", inPayload.dump().c_str());
+		json settings;
+		EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
+		json credentials;
+		EPLJSONUtils::GetObjectByName(settings, "credentials", credentials);
+		mAppId = EPLJSONUtils::GetStringByName(credentials, "appId");
+		mAppSecret = EPLJSONUtils::GetStringByName(credentials, "appSecret");
+		mOAuthToken = EPLJSONUtils::GetStringByName(credentials, "oauthToken");
+		if (!mAppSecret.empty()) {
+			ConnectToDiscord();
+		}
+	}
 }
 
 void MyStreamDeckPlugin::WillDisappearForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
 	// Remove the context
-	mVisibleContextsMutex.lock();
-	mVisibleContexts.erase(inContext);
-	mVisibleContextsMutex.unlock();
+	{
+		std::scoped_lock lock(mVisibleContextsMutex);
+		mVisibleContexts.erase(inContext);
+	}
+}
+
+void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
+{
+	const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
+
+	if (event == "getData") {
+		json outPayload{
+			{ "event", event },
+			{ "data", {{"appId", mAppId}, {"appSecret", mAppSecret}} }
+		};
+		dbgprintf("JSON to PI: %s", outPayload.dump().c_str());
+		mConnectionManager->SendToPropertyInspector(inAction, inContext, outPayload);
+		return;
+	}
+	if (event == "saveSettings") {
+		json data;
+		EPLJSONUtils::GetObjectByName(inPayload, "data", data);
+		const auto appId = EPLJSONUtils::GetStringByName(data, "appId");
+		const auto appSecret = EPLJSONUtils::GetStringByName(data, "appSecret");
+		if (appId == mAppId && appSecret == mAppSecret) {
+			return;
+		}
+		mAppId = appId;
+		mAppSecret = appSecret;
+		mOAuthToken.clear();
+		const json settings{ {"credentials", {{"appId", appId}, {"appSecret", appSecret}}} };
+		if (mClient) {
+			delete mClient;
+			mClient = nullptr;
+		}
+		for (const auto& pair: mVisibleContexts)
+		{
+			const auto context = pair.first;
+			mConnectionManager->SetSettings(settings, context);
+		}
+		if (appId.empty() || appSecret.empty()) {
+			return;
+		}
+		ConnectToDiscord();
+	}
+}
+
+void MyStreamDeckPlugin::ConnectToDiscord() {
+	if (mAppId.empty() || mAppSecret.empty()) {
+		return;
+	}
+
+	DiscordClient::Credentials credentials;
+	credentials.accessToken = mOAuthToken;
+	delete mClient;
+	mClient = new DiscordClient(mAppId, mAppSecret, credentials);
+	mClient->onStateChanged([=](DiscordClient::State state) {
+		switch (state.rpcState) {
+		case DiscordClient::RpcState::READY:
+			this->UpdateState(state.isMuted, state.isDeafened);
+			break;
+		case DiscordClient::RpcState::CONNECTION_FAILED:
+		case DiscordClient::RpcState::AUTHENTICATION_FAILED:
+		{
+			std::scoped_lock lock(mVisibleContextsMutex);
+			for (const auto& pair : mVisibleContexts) {
+				const auto ctx = pair.first;
+				mConnectionManager->ShowAlertForContext(ctx);
+			}
+			break;
+		}
+		}
+	});
+	mClient->onReady([=](DiscordClient::State) {
+		std::scoped_lock lock(mVisibleContextsMutex);
+		for (const auto& pair : mVisibleContexts) {
+			const auto ctx = pair.first;
+			mConnectionManager->ShowOKForContext(ctx);
+		}
+	});
+	mClient->onCredentialsChanged([=](DiscordClient::Credentials credentials) {
+		this->mOAuthToken = credentials.accessToken;
+		const json settings{ {"credentials", {{"appId", this->mAppId}, {"appSecret", this->mAppSecret}, { "oauthToken", credentials.accessToken }}} };
+		std::scoped_lock lock(mVisibleContextsMutex);
+		for (const auto& pair: mVisibleContexts)
+		{
+			const auto context = pair.first;
+			mConnectionManager->SetSettings(settings, context);
+		}
+
+	});
+	mClient->initializeWithBackgroundThread();
 }
 
 void MyStreamDeckPlugin::DeviceDidConnect(const std::string& inDeviceID, const json &inDeviceInfo)

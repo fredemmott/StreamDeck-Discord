@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<title>com.fredemmott.discord PI</title>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" href="css/sdpi.css">
+</head>
+
+<body>
+	<div class="sdpi-wrapper hidden" id="mainWrapper">
+		<div class="sdpi-item">
+            <div class="sdpi-item-label">App ID</div>
+            <input
+				class="sdpi-item-value"
+				id="appId"
+				onchange="saveSettings();"
+				required
+			/>
+        </div>
+		<div class="sdpi-item">
+            <div class="sdpi-item-label">App Secret</div>
+            <input
+				class="sdpi-item-value"
+				type="password"
+				id="appSecret"
+				onchange="saveSettings();"
+				required
+			/>
+        </div>
+	</div>
+
+	<script src="common.js"></script>
+	<script>
+
+		/** Step 1: Subscribe to the 'connected' event
+		 * and call your own initialization method.
+		 * The connected - event is emitted, when StreamDeck 
+		 * has established a connection. 
+		 * The 'connected' event carries a JSON object containing
+		 * necessary information about the connection and the
+		 * inital data.
+		 */
+		var uuid,
+			actionInfo,
+			ctx;
+
+		$SD.on('connected', (jsonObj) => connected(jsonObj));
+		$SD.on('sendToPropertyInspector', (jsonObj) => receivedDataFromPlugin(jsonObj));
+
+		function receivedDataFromPlugin(jsonObj) {
+			const payload = jsonObj['payload'];
+			console.log(jsonObj);
+			if (payload['event'] !== "getData") {
+				return;
+			}
+			console.log(payload);
+			const {appId, appSecret} = payload.data;
+			
+			document.getElementById('appId').value = appId;
+			document.getElementById('appSecret').value = appSecret;
+			document.getElementById('mainWrapper').classList.remove('hidden');
+		}
+
+		function connected(jsonObj) {
+			uuid = jsonObj.uuid;
+			actionInfo = jsonObj.actionInfo.action;
+			ctx = jsonObj.actionInfo.context;
+			
+			$SD.api.sendToPlugin(uuid, actionInfo, {event: "getData"});
+		};
+		
+		function saveSettings() {
+			const settings = {
+				appId: document.getElementById('appId').value,
+				appSecret: document.getElementById('appSecret').value,
+			};
+			console.log('sending to SD', settings);
+			$SD.api.sendToPlugin(uuid, actionInfo, { event: "saveSettings", data: settings });
+		}
+	</script>
+
+</body>
+
+</html>
