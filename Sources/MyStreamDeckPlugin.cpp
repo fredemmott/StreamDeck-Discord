@@ -2,9 +2,10 @@
 /**
 @file       MyStreamDeckPlugin.cpp
 
-@brief      CPU plugin
+@brief      Discord Plugin
 
 @copyright  (c) 2018, Corsair Memory, Inc.
+            (c) 2019, Frederick Emmott
 			This source code is licensed under the MIT-style license found in the LICENSE file.
 
 **/
@@ -17,23 +18,28 @@
 #include "Common/ESDConnectionManager.h"
 #include "Common/EPLJSONUtils.h"
 #include "DiscordClient.h"
+#include "CallbackTimer.h"
 
 namespace {
 	const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
 	const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
 }
 
+#ifdef _MSVC_LANG
 static_assert(_MSVC_LANG > 201402L, "C++17 not enabled in _MSVC_LANG");
 static_assert(_HAS_CXX17, "C++17 feature flag not enabled");
+#endif
 
 MyStreamDeckPlugin::MyStreamDeckPlugin()
 {
 	mClient = nullptr;
+	mTimer = new CallBackTimer();
 }
 
 MyStreamDeckPlugin::~MyStreamDeckPlugin()
 {
 	delete mClient;
+	delete mTimer;
 }
 
 void MyStreamDeckPlugin::UpdateState(bool isMuted, bool isDeafened)
@@ -71,6 +77,8 @@ void MyStreamDeckPlugin::KeyUpForAction(const std::string& inAction, const std::
 	case DiscordClient::RpcState::READY:
 		break;
 	case DiscordClient::RpcState::CONNECTION_FAILED:
+	case DiscordClient::RpcState::DISCONNECTED:
+		mTimer->stop();
 		ConnectToDiscord();
 	case DiscordClient::RpcState::AUTHENTICATION_FAILED:
 	case DiscordClient::RpcState::CONNECTING:
@@ -107,6 +115,7 @@ void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const 
 		mAppSecret = EPLJSONUtils::GetStringByName(credentials, "appSecret");
 		mOAuthToken = EPLJSONUtils::GetStringByName(credentials, "oauthToken");
 		if (!mAppSecret.empty()) {
+			mTimer->stop();
 			ConnectToDiscord();
 		}
 	}
@@ -157,7 +166,8 @@ void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::st
 		}
 		if (appId.empty() || appSecret.empty()) {
 			return;
-		}
+		}	
+		mTimer->stop();
 		ConnectToDiscord();
 	}
 }
@@ -174,9 +184,15 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 	mClient->onStateChanged([=](DiscordClient::State state) {
 		switch (state.rpcState) {
 		case DiscordClient::RpcState::READY:
+			mTimer->stop();
 			this->UpdateState(state.isMuted, state.isDeafened);
 			break;
 		case DiscordClient::RpcState::CONNECTION_FAILED:
+			ConnectToDiscordLater();
+			break;
+		case DiscordClient::RpcState::DISCONNECTED:
+			ConnectToDiscordLater();
+			// fallthrough
 		case DiscordClient::RpcState::AUTHENTICATION_FAILED:
 		{
 			std::scoped_lock lock(mVisibleContextsMutex);
@@ -207,6 +223,23 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 
 	});
 	mClient->initializeWithBackgroundThread();
+}
+
+void MyStreamDeckPlugin::ConnectToDiscordLater()
+{
+	if (mTimer->is_running()) {
+		return;
+	}
+	mTimer->start(1000, [=]() {
+		DiscordClient::RpcState state = DiscordClient::RpcState::DISCONNECTED;
+		if (mClient) {
+			state = mClient->getState().rpcState;
+		}
+		if (state != DiscordClient::RpcState::CONNECTION_FAILED && state != DiscordClient::RpcState::DISCONNECTED) {
+			return;
+		}
+		ConnectToDiscord();
+	});
 }
 
 void MyStreamDeckPlugin::DeviceDidConnect(const std::string& inDeviceID, const json &inDeviceInfo)

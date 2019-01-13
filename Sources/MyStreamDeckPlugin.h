@@ -13,6 +13,7 @@
 #include "Common/ESDBasePlugin.h"
 #include <mutex>
 
+class CallBackTimer;
 class DiscordClient;
 
 class MyStreamDeckPlugin : public ESDBasePlugin
@@ -45,6 +46,8 @@ private:
 	std::string mOAuthToken;
 	
 	DiscordClient *mClient;
+	CallBackTimer *mTimer;
 
 	void ConnectToDiscord();
+	void ConnectToDiscordLater();
 };

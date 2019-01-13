@@ -3,6 +3,7 @@
 #include "connection.h"
 #include "../Common/EPLJSONUtils.h"
 
+#include <functional>
 #include <string>
 
 // I took this from the buffer size libuv uses for named pipes; I suspect ours would usually be much
@@ -42,8 +43,8 @@ struct RpcConnection {
 
     BaseConnection* connection{nullptr};
     State state{State::Disconnected};
-    void (*onConnect)(const json& message){nullptr};
-    void (*onDisconnect)(int errorCode, const std::string& message){nullptr};
+	std::function<void(const json&)> onConnect = [](const json& message) {};
+	std::function<void(int, const std::string&)> onDisconnect = [](int code, const std::string& message) {};
 	std::string appId;
     int lastErrorCode{0};
 	std::string lastErrorMessage;

@@ -74,7 +74,7 @@ DiscordClient::DiscordClient(const std::string & appId, const std::string & appS
 DiscordClient::~DiscordClient()
 {
 	delete mProcessingThread;
-	delete mConnection;
+	RpcConnection::Destroy(mConnection);
 }
 
 void DiscordClient::initializeWithBackgroundThread() {
@@ -92,6 +92,12 @@ void DiscordClient::initialize() {
 
 	setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
 	mConnection = RpcConnection::Create(mAppId);
+	mConnection->onDisconnect = [=](int code, const std::string& message) {
+		dbgprintf("Disconnected from discord: %d %s", code, message.c_str());
+		if (this->mState.rpcState != RpcState::CONNECTION_FAILED && this->mState.rpcState != RpcState::AUTHENTICATION_FAILED) {
+			setRpcState(RpcState::DISCONNECTED);
+		}
+	};
 	mConnection->Open();
 }
 
