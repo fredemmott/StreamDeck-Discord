@@ -32,16 +32,21 @@
     }
   ], 
   "Author": "Fred Emmott", 
+  "CodePathMac": "sddiscord",
   "CodePathWin": "sddiscord.exe",
   "PropertyInspectorPath": "propertyinspector/index.html",
   "Description": "Toggle Discord Mute and Deafen.",
   "Name": "Discord Mute/Deafen", 
   "Icon": "discord-mic-off", 
-  "Version": "1.0",
+  "Version": "1.1",
   "OS": [
     {
         "Platform": "windows", 
         "MinimumVersion" : "10"
+    },
+    {
+        "Platform": "mac",
+        "MinimumVersion": "10.11"
     }
   ]
 }

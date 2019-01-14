@@ -1,11 +1,24 @@
 #include "rpc_connection.h"
 
 #include "../Common/EPLJSONUtils.h"
-#include "../Windows/pch.h"
+#include "../pch.h"
 #include <atomic>
+#include <algorithm>
 
 static const int RpcVersion = 1;
 static RpcConnection Instance;
+
+#ifdef __APPLE__
+namespace {
+    void strncpy_s(char* dst, const char* src, size_t dstSize) {
+        strlcpy(dst, src, dstSize);
+    }
+    void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
+        assert(dstSize >= srcSize);
+        memcpy(dst, src, std::min(dstSize, srcSize));
+    }
+}
+#endif
 
 /*static*/ RpcConnection* RpcConnection::Create(const std::string& applicationId)
 {
@@ -85,7 +98,7 @@ void RpcConnection::Write(const json & message)
 
 bool RpcConnection::Write(const void* data, size_t length)
 {
-	dbgprintf("Writing to Discord: %s", data);
+	DebugPrint("Writing to Discord: %s", data);
     sendFrame.opcode = Opcode::Frame;
     memcpy_s(sendFrame.message, sizeof(sendFrame.message), data, length);
     sendFrame.length = (uint32_t)length;
@@ -141,7 +154,7 @@ bool RpcConnection::Read(MessageFrame& readFrame)
             return false;
         }
         case Opcode::Frame:
-			dbgprintf("Reading from discord: %s", readFrame.message);
+			DebugPrint("Reading from discord: %s", readFrame.message);
             return true;
         case Opcode::Ping:
             readFrame.opcode = Opcode::Pong;

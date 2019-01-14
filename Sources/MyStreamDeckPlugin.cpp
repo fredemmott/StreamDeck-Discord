@@ -84,6 +84,9 @@ void MyStreamDeckPlugin::KeyUpForAction(const std::string& inAction, const std::
 	case DiscordClient::RpcState::CONNECTING:
 	case DiscordClient::RpcState::REQUESTING_ACCESS_TOKEN:
 	case DiscordClient::RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN:
+    case DiscordClient::RpcState::REQUESTING_USER_PERMISSION:
+    case DiscordClient::RpcState::UNINITIALIZED:
+    case DiscordClient::RpcState::REQUESTING_VOICE_STATE:
 		mConnectionManager->ShowAlertForContext(inContext);
 		return;
 	}
@@ -106,7 +109,7 @@ void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const 
 		mVisibleContexts[inContext] = inAction;
 	}
 	if (!mClient) {
-		dbgprintf("Loaded settings: %s", inPayload.dump().c_str());
+		DebugPrint("Loaded settings: %s", inPayload.dump().c_str());
 		json settings;
 		EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
 		json credentials;
@@ -139,7 +142,7 @@ void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::st
 			{ "event", event },
 			{ "data", {{"appId", mAppId}, {"appSecret", mAppSecret}} }
 		};
-		dbgprintf("JSON to PI: %s", outPayload.dump().c_str());
+		DebugPrint("JSON to PI: %s", outPayload.dump().c_str());
 		mConnectionManager->SendToPropertyInspector(inAction, inContext, outPayload);
 		return;
 	}
@@ -202,6 +205,8 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 			}
 			break;
 		}
+        default:
+                return;
 		}
 	});
 	mClient->onReady([=](DiscordClient::State) {
