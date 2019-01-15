@@ -42,7 +42,7 @@ public:
 			while (_execute.load(std::memory_order_acquire))
 			{
                 if (!_client->processEvents()) {
-                    return;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }
 		});
