@@ -41,8 +41,10 @@ public:
 		{
 			while (_execute.load(std::memory_order_acquire))
 			{
-				_client->processEvents();
-			}
+                if (!_client->processEvents()) {
+                    return;
+                }
+            }
 		});
 	}
 
