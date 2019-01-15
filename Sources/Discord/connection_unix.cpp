@@ -57,7 +57,6 @@ bool BaseConnection::Open()
     if (self->sock == -1) {
         return false;
     }
-    fcntl(self->sock, F_SETFL, O_NONBLOCK);
 #ifdef SO_NOSIGPIPE
     int optval = 1;
     setsockopt(self->sock, SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof(optval));
