@@ -20,11 +20,19 @@ Installation and demo video: https://youtu.be/MSMbRtj2fFA
 # Limitations
 
 - only one application can control Discord voice settings at a time. Stop anything else that controls Discord mute/deafen, such as the Discord applet in Logitech Gaming Software
-- mute/deafen only apply while the application is running. For example, if you mute the microphone, then quit the StreamDeck software, the microphone is no longer muted.
+- mute/deafen only apply while the application is running. For example, if you mute the microphone, then quit the StreamDeck software, the microphone might not be muted.
 
 These limitations are imposed by Discord and can not be fixed by this plugin.
 
-# Firewall?
+# Why does this plugin ask for my Discord username and avatar?
+
+This information is not used or shared by the plugin. It asks for this permission as if it doesn't,
+Discord will separately prompt for it anyway, even though it's not wanted. Asking for it up front
+means you will get one permission prompt instead of two.
+
+See https://support.discordapp.com/hc/en-us/community/posts/360038932712-allow-apps-without-identify-role
+
+# Why does this plugin ask my firewall for permission to access the internet?
 
 Discord plugins use OAuth2. The flow is basically:
 
@@ -35,6 +43,12 @@ Discord plugins use OAuth2. The flow is basically:
 1. the plugin uses the token to log in to the client
 
 The third step requires internet access.
+
+See https://support.discordapp.com/hc/en-us/community/posts/360038666632-IPC-authentication
+
+# Why does this plugin require me to register an app with Discord?
+
+See https://support.discordapp.com/hc/en-us/community/posts/360038666632-IPC-authentication
 
 # License
 

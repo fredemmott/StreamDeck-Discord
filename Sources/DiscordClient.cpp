@@ -122,7 +122,7 @@ bool DiscordClient::processInitializationEvents() {
 			{ "cmd", "AUTHORIZE" },
 			{ "args", {
 				{ "client_id", mAppId },
-				{ "scopes", { "rpc" } }
+				{ "scopes", { "rpc", "identify" } }
 			}}
 			});
 		return true;
