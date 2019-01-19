@@ -12,15 +12,28 @@ namespace {
 	HINTERNET hInternet = nullptr;
 
 	std::string urlencode(const std::string& in) {
-		DWORD bufsize = in.length() * 3;
-		std::unique_ptr<char> buf(new char[bufsize]);
-		UrlEscapeA(
-			in.c_str(),
-			buf.get(),
-			&bufsize,
-			NULL
-		);
-		return std::string(buf.get(), bufsize);
+		const char* hex = "0123456789abcdef";
+		// this matches x-www-form-url-encoded, which isn't quite the same thing as actual
+		// url escaping
+		std::string out;
+		for (const auto c: in) {
+			if (
+				(c >= 'A' && c <= 'Z') ||
+				(c >= 'a' && c <= 'z') ||
+				(c >= '0' && c <= '9')
+			) {
+				out += c;
+				continue;
+			}
+			if (c == ' ') {
+				out += '+';
+				continue;
+			}
+			out += '%';
+			out += hex[c / 16];
+			out += hex[c % 16];
+		}
+		return out;
 	}
 }
 
@@ -34,7 +47,7 @@ std::string DiscordClient::getNextNonce() {
 	return ret;
 }
 
-DiscordClient::Credentials DiscordClient::getOAuthCredentialsFromCode(const std::string& code) {
+DiscordClient::Credentials DiscordClient::getOAuthCredentials(const std::string& grantType, const std::string& secretType, const std::string& secret) {
 	if (!hInternet) {
 		hInternet = InternetOpen(
 			L"com.fredemmott.streamdeck-discord",
@@ -70,13 +83,14 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentialsFromCode(const std:
 	HttpAddRequestHeaders(hRequest, headers, wcslen(headers), HTTP_ADDREQ_FLAG_ADD);
 	std::stringstream ss;
 	ss
-		<< "grant_type=authorization_code"
-		<< "&code=" << urlencode(code)
-		<< "&redirect_uri=" << urlencode("https://localhost")
+		<< "grant_type=" << urlencode(grantType)
+		<< "&" << urlencode(secretType) << "=" << urlencode(secret)
+		<< "&redirect_uri=" << urlencode("https://localhost/")
 		<< "&client_id=" << urlencode(mAppId)
-		<< "&client_secret=" << urlencode(mAppSecret);
+		<< "&client_secret=" << urlencode(mAppSecret)
+		<< "&scope=rpc identify";
 	const auto postData = ss.str();
-	dbgprintf("Sending to discord www api: %s", postData.c_str());
+	DebugPrint("Sending to discord www api: %s", postData.c_str());
 
 	HttpSendRequestA(hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
 
@@ -90,7 +104,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentialsFromCode(const std:
 		response += std::string(buf, bytesRead);
 	} while (bytesRead > 0);
 	
-	dbgprintf("HTTP response from discord: %s", response.c_str());
+	DebugPrint("HTTP response from discord: %s", response.c_str());
 	const json parsed = json::parse(response);
 	mCredentials.accessToken = EPLJSONUtils::GetStringByName(parsed, "access_token");
 	mCredentials.refreshToken = EPLJSONUtils::GetStringByName(parsed, "refresh_token");
