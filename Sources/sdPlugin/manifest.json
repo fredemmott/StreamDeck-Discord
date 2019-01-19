@@ -11,7 +11,7 @@
 		}
       ],
       "SupportedInMultiActions": false,
-	  "Name": "Discord Self-Mute",
+	    "Name": "Toggle Discord Mute",
       "Tooltip": "Toggle Self-Mute in Discord",
       "UUID": "com.fredemmott.discord.mute"
     },
@@ -26,7 +26,7 @@
 		}
       ],
       "SupportedInMultiActions": false,
-	  "Name": "Discord Self-Deafen",
+	    "Name": "Toggle Discord Deafen",
       "Tooltip": "Toggle Self-Mute in Deafen",
       "UUID": "com.fredemmott.discord.deafen"
     }
