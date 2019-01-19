@@ -41,10 +41,10 @@ public:
 		{
 			while (_execute.load(std::memory_order_acquire))
 			{
-                if (!_client->processEvents()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
-            }
+				if (!_client->processEvents()) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				}
+			}
 		});
 	}
 
@@ -122,7 +122,7 @@ bool DiscordClient::processInitializationEvents() {
 			{ "cmd", "AUTHORIZE" },
 			{ "args", {
 				{ "client_id", mAppId },
-				{ "scopes", { "rpc", "identify" } }
+				{ "scopes", json::array({ "rpc", "identify" }) }
 			}}
 			});
 		return true;
@@ -137,6 +137,16 @@ bool DiscordClient::processInitializationEvents() {
 		}}
 		});
 	return true;
+}
+
+void DiscordClient::startAuthenticationWithNewAccessToken() {
+	mCredentialsCallback(mCredentials);
+	setRpcState(RpcState::REQUESTING_ACCESS_TOKEN, RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
+	mConnection->Write({
+		{ "nonce", getNextNonce() },
+		{ "cmd", "AUTHENTICATE" },
+		{ "args", { "access_token", mCredentials.accessToken }}
+	});
 }
 
 bool DiscordClient::processEvents() {
@@ -160,25 +170,32 @@ bool DiscordClient::processEvents() {
 			return false;
 		}
 		setRpcState(RpcState::REQUESTING_USER_PERMISSION, RpcState::REQUESTING_ACCESS_TOKEN);
-		mCredentials = getOAuthCredentialsFromCode(code);
+		mCredentials = getOAuthCredentials("authorization_code", "code", code);
 		if (mCredentials.accessToken.empty()) {
 			setRpcState(RpcState::REQUESTING_ACCESS_TOKEN, RpcState::AUTHENTICATION_FAILED);
 			return false;
 		}
-		mCredentialsCallback(mCredentials);
-		setRpcState(RpcState::REQUESTING_ACCESS_TOKEN, RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
-		mConnection->Write({
-			{ "nonce", getNextNonce() },
-			{ "cmd", "AUTHENTICATE" },
-			{ "args", { "access_token", mCredentials.accessToken }}
-		});
+		startAuthenticationWithNewAccessToken();
 		return true;
 	}
 
 	if (command == "AUTHENTICATE") {
 		if (event == "ERROR") {
-			setRpcState(RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN, RpcState::AUTHENTICATION_FAILED);
-			return false;
+			mCredentials.accessToken.clear();
+			if (mCredentials.refreshToken.empty()) {
+				setRpcState(RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN, RpcState::AUTHENTICATION_FAILED);
+				return false;
+			}
+			setRpcState(RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN, RpcState::REQUESTING_ACCESS_TOKEN);
+			DebugPrint("Attempting RefreshToken");
+			mCredentials = getOAuthCredentials("refresh_token", "refresh_token", mCredentials.refreshToken);
+			if (mCredentials.accessToken.empty()) {
+				setRpcState(RpcState::REQUESTING_ACCESS_TOKEN, RpcState::AUTHENTICATION_FAILED);
+				return false;
+			}
+			DebugPrint("Used RefreshToken");
+			startAuthenticationWithNewAccessToken();
+			return true;
 		}
 		setRpcState(RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN, RpcState::REQUESTING_VOICE_STATE);
 		mConnection->Write({

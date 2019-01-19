@@ -1,11 +1,11 @@
 //==============================================================================
 /**
-@file       MyStreamDeckPlugin.cpp
+@file	   MyStreamDeckPlugin.cpp
 
-@brief      Discord Plugin
+@brief	  Discord Plugin
 
 @copyright  (c) 2018, Corsair Memory, Inc.
-            (c) 2019, Frederick Emmott
+			(c) 2019, Frederick Emmott
 			This source code is licensed under the MIT-style license found in the LICENSE file.
 
 **/
@@ -84,9 +84,9 @@ void MyStreamDeckPlugin::KeyUpForAction(const std::string& inAction, const std::
 	case DiscordClient::RpcState::CONNECTING:
 	case DiscordClient::RpcState::REQUESTING_ACCESS_TOKEN:
 	case DiscordClient::RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN:
-    case DiscordClient::RpcState::REQUESTING_USER_PERMISSION:
-    case DiscordClient::RpcState::UNINITIALIZED:
-    case DiscordClient::RpcState::REQUESTING_VOICE_STATE:
+	case DiscordClient::RpcState::REQUESTING_USER_PERMISSION:
+	case DiscordClient::RpcState::UNINITIALIZED:
+	case DiscordClient::RpcState::REQUESTING_VOICE_STATE:
 		mConnectionManager->ShowAlertForContext(inContext);
 		return;
 	}
@@ -117,6 +117,7 @@ void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const 
 		mAppId = EPLJSONUtils::GetStringByName(credentials, "appId");
 		mAppSecret = EPLJSONUtils::GetStringByName(credentials, "appSecret");
 		mOAuthToken = EPLJSONUtils::GetStringByName(credentials, "oauthToken");
+		mRefreshToken = EPLJSONUtils::GetStringByName(credentials, "refreshToken");
 		if (!mAppSecret.empty()) {
 			mTimer->stop();
 			ConnectToDiscord();
@@ -157,6 +158,7 @@ void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::st
 		mAppId = appId;
 		mAppSecret = appSecret;
 		mOAuthToken.clear();
+		mRefreshToken.clear();
 		const json settings{ {"credentials", {{"appId", appId}, {"appSecret", appSecret}}} };
 		if (mClient) {
 			delete mClient;
@@ -182,6 +184,7 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 
 	DiscordClient::Credentials credentials;
 	credentials.accessToken = mOAuthToken;
+	credentials.refreshToken = mRefreshToken;
 	delete mClient;
 	mClient = new DiscordClient(mAppId, mAppSecret, credentials);
 	mClient->onStateChanged([=](DiscordClient::State state) {
@@ -205,8 +208,8 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 			}
 			break;
 		}
-        default:
-                return;
+		default:
+				return;
 		}
 	});
 	mClient->onReady([=](DiscordClient::State) {
@@ -218,7 +221,13 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 	});
 	mClient->onCredentialsChanged([=](DiscordClient::Credentials credentials) {
 		this->mOAuthToken = credentials.accessToken;
-		const json settings{ {"credentials", {{"appId", this->mAppId}, {"appSecret", this->mAppSecret}, { "oauthToken", credentials.accessToken }}} };
+		this->mRefreshToken = credentials.refreshToken;
+		const json settings{ {"credentials", {
+			  {"appId", this->mAppId},
+			  {"appSecret", this->mAppSecret},
+			  { "oauthToken", credentials.accessToken },
+			  { "refreshToken", credentials.refreshToken }
+		}} };
 		std::scoped_lock lock(mVisibleContextsMutex);
 		for (const auto& pair: mVisibleContexts)
 		{

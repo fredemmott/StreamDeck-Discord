@@ -44,6 +44,7 @@ private:
 	std::string mAppId;
 	std::string mAppSecret;
 	std::string mOAuthToken;
+	std::string mRefreshToken;
 	
 	DiscordClient *mClient;
 	CallBackTimer *mTimer;

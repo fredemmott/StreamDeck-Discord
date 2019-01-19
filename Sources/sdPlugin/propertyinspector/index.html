@@ -75,7 +75,6 @@
 				appId: document.getElementById('appId').value,
 				appSecret: document.getElementById('appSecret').value,
 			};
-			console.log('sending to SD', settings);
 			$SD.api.sendToPlugin(uuid, actionInfo, { event: "saveSettings", data: settings });
 		}
 	</script>

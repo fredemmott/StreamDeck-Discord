@@ -60,9 +60,10 @@ private:
 	std::string mAppSecret;
 	DiscordClientThread* mProcessingThread;
 
-	Credentials getOAuthCredentialsFromCode(const std::string& code);
+    Credentials getOAuthCredentials(const std::string& grantType, const std::string& secretType, const std::string& secret);
 	void setRpcState(RpcState state);
 	void setRpcState(RpcState oldState, RpcState newState);
 	std::string getNextNonce();
 	bool processInitializationEvents();
+    void startAuthenticationWithNewAccessToken();
 };
