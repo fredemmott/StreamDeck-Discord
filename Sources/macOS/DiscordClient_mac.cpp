@@ -64,7 +64,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(const std::string&
 		<< "&redirect_uri=" << urlencode(curl, "https://localhost/")
 		<< "&client_id=" << urlencode(curl, mAppId)
 		<< "&client_secret=" << urlencode(curl, mAppSecret)
-		<< "&scope=" << urlencode(curl, "rpc identify");
+		<< "&scope=" << urlencode(curl, "rpc");
 	const auto postData = ss.str();
 	DebugPrint("Sending to discord www api: %s", postData.c_str());
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
