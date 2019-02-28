@@ -1,5 +1,5 @@
-#include "../DiscordClient.h"
 #include "../Common/EPLJSONUtils.h"
+#include "../DiscordClient.h"
 #include "../Windows/pch.h"
 
 #include <Rpc.h>
@@ -9,104 +9,93 @@
 #include <sstream>
 
 namespace {
-	HINTERNET hInternet = nullptr;
+HINTERNET hInternet = nullptr;
 
-	std::string urlencode(const std::string& in) {
-		const char* hex = "0123456789abcdef";
-		// this matches x-www-form-url-encoded, which isn't quite the same thing as actual
-		// url escaping
-		std::string out;
-		for (const auto c: in) {
-			if (
-				(c >= 'A' && c <= 'Z') ||
-				(c >= 'a' && c <= 'z') ||
-				(c >= '0' && c <= '9')
-			) {
-				out += c;
-				continue;
-			}
-			if (c == ' ') {
-				out += '+';
-				continue;
-			}
-			out += '%';
-			out += hex[c / 16];
-			out += hex[c % 16];
-		}
-		return out;
-	}
+std::string urlencode(const std::string& in) {
+  const char* hex = "0123456789abcdef";
+  // this matches x-www-form-url-encoded, which isn't quite the same thing as
+  // actual url escaping
+  std::string out;
+  for (const auto c : in) {
+    if (
+      (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+      || (c >= '0' && c <= '9')) {
+      out += c;
+      continue;
+    }
+    if (c == ' ') {
+      out += '+';
+      continue;
+    }
+    out += '%';
+    out += hex[c / 16];
+    out += hex[c % 16];
+  }
+  return out;
 }
+}// namespace
 
 std::string DiscordClient::getNextNonce() {
-	UUID uuid;
-	UuidCreate(&uuid);
-	RPC_CSTR rpcstr;
-	UuidToStringA(&uuid, &rpcstr);
-	const std::string ret((char*) rpcstr);
-	RpcStringFreeA(&rpcstr);
-	return ret;
+  UUID uuid;
+  UuidCreate(&uuid);
+  RPC_CSTR rpcstr;
+  UuidToStringA(&uuid, &rpcstr);
+  const std::string ret((char*)rpcstr);
+  RpcStringFreeA(&rpcstr);
+  return ret;
 }
 
-DiscordClient::Credentials DiscordClient::getOAuthCredentials(const std::string& grantType, const std::string& secretType, const std::string& secret) {
-	if (!hInternet) {
-		hInternet = InternetOpen(
-			L"com.fredemmott.streamdeck-discord",
-			INTERNET_OPEN_TYPE_PRECONFIG,
-			nullptr,
-			nullptr,
-			0
-		);
-	}
+DiscordClient::Credentials DiscordClient::getOAuthCredentials(
+  const std::string& grantType,
+  const std::string& secretType,
+  const std::string& secret) {
+  if (!hInternet) {
+    hInternet = InternetOpen(
+      L"com.fredemmott.streamdeck-discord", INTERNET_OPEN_TYPE_PRECONFIG,
+      nullptr, nullptr, 0);
+  }
 
-	auto hConnection = InternetConnectA(
-		hInternet,
-		"discordapp.com",
-		INTERNET_DEFAULT_HTTPS_PORT,
-		nullptr,
-		nullptr,
-		INTERNET_SERVICE_HTTP,
-		INTERNET_FLAG_SECURE, // HTTPS please
-		NULL
-	);
-	auto hRequest = HttpOpenRequestA(
-		hConnection,
-		"POST",
-		"/api/oauth2/token",
-		nullptr,
-		nullptr,
-		nullptr,
-		INTERNET_FLAG_SECURE,
-		NULL
-	);
+  auto hConnection = InternetConnectA(
+    hInternet, "discordapp.com", INTERNET_DEFAULT_HTTPS_PORT, nullptr, nullptr,
+    INTERNET_SERVICE_HTTP,
+    INTERNET_FLAG_SECURE,// HTTPS please
+    NULL);
+  auto hRequest = HttpOpenRequestA(
+    hConnection, "POST", "/api/oauth2/token", nullptr, nullptr, nullptr,
+    INTERNET_FLAG_SECURE, NULL);
 
-	const auto headers = L"Content-Type: application/x-www-form-urlencoded\r\nHost: discordapp.com";
-	HttpAddRequestHeaders(hRequest, headers, wcslen(headers), HTTP_ADDREQ_FLAG_ADD);
-	std::stringstream ss;
-	ss
-		<< "grant_type=" << urlencode(grantType)
-		<< "&" << urlencode(secretType) << "=" << urlencode(secret)
-		<< "&redirect_uri=" << urlencode("https://localhost/")
-		<< "&client_id=" << urlencode(mAppId)
-		<< "&client_secret=" << urlencode(mAppSecret)
-		<< "&scope=rpc";
-	const auto postData = ss.str();
-	DebugPrint("Sending to discord www api: %s", postData.c_str());
+  const auto headers
+    = L"Content-Type: application/x-www-form-urlencoded\r\nHost: "
+      L"discordapp.com";
+  HttpAddRequestHeaders(
+    hRequest, headers, wcslen(headers), HTTP_ADDREQ_FLAG_ADD);
+  std::stringstream ss;
+  ss << "grant_type=" << urlencode(grantType) << "&" << urlencode(secretType)
+     << "=" << urlencode(secret)
+     << "&redirect_uri=" << urlencode("https://localhost/")
+     << "&client_id=" << urlencode(mAppId)
+     << "&client_secret=" << urlencode(mAppSecret) << "&scope=rpc";
+  const auto postData = ss.str();
+  DebugPrint("Sending to discord www api: %s", postData.c_str());
 
-	HttpSendRequestA(hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
+  HttpSendRequestA(
+    hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
 
-	// I tried using HttpQueryInfo to get Content-Length; it turns out that Discord only send a Content-Length
-	// header for error cases.
-	std::string response;
-	char buf[1024];
-	DWORD bytesRead;
-	do {
-		InternetReadFile(hRequest, buf, sizeof(buf), &bytesRead);
-		response += std::string(buf, bytesRead);
-	} while (bytesRead > 0);
-	
-	DebugPrint("HTTP response from discord: %s", response.c_str());
-	const json parsed = json::parse(response);
-	mCredentials.accessToken = EPLJSONUtils::GetStringByName(parsed, "access_token");
-	mCredentials.refreshToken = EPLJSONUtils::GetStringByName(parsed, "refresh_token");
-	return mCredentials;
+  // I tried using HttpQueryInfo to get Content-Length; it turns out that
+  // Discord only send a Content-Length header for error cases.
+  std::string response;
+  char buf[1024];
+  DWORD bytesRead;
+  do {
+    InternetReadFile(hRequest, buf, sizeof(buf), &bytesRead);
+    response += std::string(buf, bytesRead);
+  } while (bytesRead > 0);
+
+  DebugPrint("HTTP response from discord: %s", response.c_str());
+  const json parsed = json::parse(response);
+  mCredentials.accessToken
+    = EPLJSONUtils::GetStringByName(parsed, "access_token");
+  mCredentials.refreshToken
+    = EPLJSONUtils::GetStringByName(parsed, "refresh_token");
+  return mCredentials;
 }
