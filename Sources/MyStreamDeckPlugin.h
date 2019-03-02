@@ -80,6 +80,7 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
 
   DiscordClient* mClient;
   CallBackTimer* mTimer;
+  bool mHaveRequestedGlobalSettings;
 
   void ConnectToDiscord();
   void ConnectToDiscordLater();

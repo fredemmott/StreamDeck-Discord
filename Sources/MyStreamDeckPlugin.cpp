@@ -32,6 +32,7 @@ static_assert(_HAS_CXX17, "C++17 feature flag not enabled");
 #endif
 
 MyStreamDeckPlugin::MyStreamDeckPlugin() {
+  mHaveRequestedGlobalSettings = false;
   mClient = nullptr;
   mTimer = new CallBackTimer();
 }
@@ -113,13 +114,18 @@ void MyStreamDeckPlugin::WillAppearForAction(
     std::scoped_lock lock(mVisibleContextsMutex);
     mVisibleContexts[inContext] = inAction;
   }
+  if (!mHaveRequestedGlobalSettings) {
+    mHaveRequestedGlobalSettings = true;
+    mConnectionManager->GetGlobalSettings();
+  }
 
   if (mClient) {
     const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
     const auto discordState = mClient->getState();
-    const int desiredState = inAction == MUTE_ACTION_ID
-                               ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
-                               : (discordState.isDeafened ? 1 : 0);
+    const int desiredState
+      = inAction == MUTE_ACTION_ID
+          ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
+          : (discordState.isDeafened ? 1 : 0);
     if (state != desiredState) {
       mConnectionManager->SetState(desiredState, inContext);
     }
@@ -257,7 +263,8 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
 void MyStreamDeckPlugin::DeviceDidConnect(
   const std::string& inDeviceID,
   const json& inDeviceInfo) {
-  if (!mCredentials.isValid()) {
+  if (!mHaveRequestedGlobalSettings) {
+    mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
 }
