@@ -43,39 +43,39 @@
 		 */
 		var uuid,
 			actionInfo,
-			ctx;
+			ctx,
+			settings;
 
 		$SD.on('connected', (jsonObj) => connected(jsonObj));
-		$SD.on('sendToPropertyInspector', (jsonObj) => receivedDataFromPlugin(jsonObj));
-
-		function receivedDataFromPlugin(jsonObj) {
-			const payload = jsonObj['payload'];
-			console.log(jsonObj);
-			if (payload['event'] !== "getData") {
-				return;
-			}
-			console.log(payload);
-			const {appId, appSecret} = payload.data;
-			
-			document.getElementById('appId').value = appId;
-			document.getElementById('appSecret').value = appSecret;
-			document.getElementById('mainWrapper').classList.remove('hidden');
-		}
-
+		$SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
+		
 		function connected(jsonObj) {
 			uuid = jsonObj.uuid;
 			actionInfo = jsonObj.actionInfo.action;
 			ctx = jsonObj.actionInfo.context;
 			
-			$SD.api.sendToPlugin(uuid, actionInfo, {event: "getData"});
+			$SD.api.getGlobalSettings(uuid);
+		};
+		
+		function didReceiveGlobalSettings(jsonObj) {
+			settings = jsonObj.payload.settings;
+			console.log(settings);
+			document.getElementById('appId').value = settings.appId;
+			document.getElementById('appSecret').value = settings.appSecret;
+			document.getElementById('mainWrapper').classList.remove('hidden');
 		};
 		
 		function saveSettings() {
-			const settings = {
-				appId: document.getElementById('appId').value,
-				appSecret: document.getElementById('appSecret').value,
-			};
-			$SD.api.sendToPlugin(uuid, actionInfo, { event: "saveSettings", data: settings });
+			const appId = document.getElementById('appId').value;
+			const appSecret = document.getElementById('appSecret').value;
+			if (appId == settings.appId && appSecret == settings.appSecret) {
+			  return;
+			}
+			settings.appId = appId;
+			settings.appSecret = appSecret;
+			settings.oauthToken = "";
+			settings.refreshToken = "";
+			$SD.api.setGlobalSettings(uuid, settings);
 		}
 	</script>
 
