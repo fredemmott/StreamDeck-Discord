@@ -10,24 +10,17 @@
 <body>
 	<div class="sdpi-wrapper hidden" id="mainWrapper">
 		<div class="sdpi-item">
-            <div class="sdpi-item-label">App ID</div>
-            <input
-				class="sdpi-item-value"
-				id="appId"
-				onchange="saveSettings();"
-				required
-			/>
-        </div>
+			<div class="sdpi-item-label">App ID</div>
+			<input class="sdpi-item-value" id="appId" onchange="saveSettings();" required />
+		</div>
 		<div class="sdpi-item">
-            <div class="sdpi-item-label">App Secret</div>
-            <input
-				class="sdpi-item-value"
-				type="password"
-				id="appSecret"
-				onchange="saveSettings();"
-				required
-			/>
-        </div>
+			<div class="sdpi-item-label">App Secret</div>
+			<input class="sdpi-item-value" type="password" id="appSecret" onchange="saveSettings();" required />
+		</div>
+		<div class="sdpi-item">
+			<div class="sdpi-item-label">Relink</div>
+			<button class="sdpi-item-value" type="button" onclick="reconnect();">Reset Discord Connection</button>
+		</div>
 	</div>
 
 	<script src="common.js"></script>
@@ -35,8 +28,8 @@
 
 		/** Step 1: Subscribe to the 'connected' event
 		 * and call your own initialization method.
-		 * The connected - event is emitted, when StreamDeck 
-		 * has established a connection. 
+		 * The connected - event is emitted, when StreamDeck
+		 * has established a connection.
 		 * The 'connected' event carries a JSON object containing
 		 * necessary information about the connection and the
 		 * inital data.
@@ -48,15 +41,15 @@
 
 		$SD.on('connected', (jsonObj) => connected(jsonObj));
 		$SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
-		
+
 		function connected(jsonObj) {
 			uuid = jsonObj.uuid;
 			actionInfo = jsonObj.actionInfo.action;
 			ctx = jsonObj.actionInfo.context;
-			
+
 			$SD.api.getGlobalSettings(uuid);
 		};
-		
+
 		function didReceiveGlobalSettings(jsonObj) {
 			settings = jsonObj.payload.settings;
 			console.log(settings);
@@ -64,19 +57,25 @@
 			document.getElementById('appSecret').value = settings.appSecret;
 			document.getElementById('mainWrapper').classList.remove('hidden');
 		};
-		
+
 		function saveSettings() {
 			const appId = document.getElementById('appId').value;
 			const appSecret = document.getElementById('appSecret').value;
 			if (appId == settings.appId && appSecret == settings.appSecret) {
-			  return;
+				return;
 			}
 			settings.appId = appId;
 			settings.appSecret = appSecret;
 			settings.oauthToken = "";
 			settings.refreshToken = "";
 			$SD.api.setGlobalSettings(uuid, settings);
-		}
+		};
+
+		function reconnect() {
+			settings.oauthToken = "";
+			settings.refreshToken = "";
+			$SD.api.setGlobalSettings(uuid, settings);
+		};
 	</script>
 
 </body>

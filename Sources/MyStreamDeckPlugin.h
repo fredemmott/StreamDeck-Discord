@@ -69,6 +69,7 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
     std::string refreshToken;
 
     bool isValid() const;
+    bool operator==(const Credentials& other) const;
     json toJSON() const;
     static Credentials fromJSON(const json&);
   };

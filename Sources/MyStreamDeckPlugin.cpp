@@ -154,9 +154,7 @@ void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
-  if (
-    mCredentials.appId == globalSettings.appId
-    && mCredentials.appSecret == globalSettings.appSecret) {
+  if (mCredentials == globalSettings) {
     return;
   }
   mCredentials = globalSettings;
@@ -257,6 +255,13 @@ void MyStreamDeckPlugin::DeviceDidDisconnect(const std::string& inDeviceID) {
 
 bool MyStreamDeckPlugin::Credentials::isValid() const {
   return !(appId.empty() || appSecret.empty());
+}
+
+bool MyStreamDeckPlugin::Credentials::operator==(
+  const Credentials& other) const {
+  return appId == other.appId && appSecret == other.appSecret
+         && oauthToken == other.oauthToken
+         && refreshToken == other.refreshToken;
 }
 
 json MyStreamDeckPlugin::Credentials::toJSON() const {
