@@ -113,7 +113,19 @@ void MyStreamDeckPlugin::WillAppearForAction(
     std::scoped_lock lock(mVisibleContextsMutex);
     mVisibleContexts[inContext] = inAction;
   }
-  if (!(mClient || mLegacyCredentials.isValid())) {
+
+  if (mClient) {
+    const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
+    const auto discordState = mClient->getState();
+    const int desiredState = inAction == MUTE_ACTION_ID
+                               ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
+                               : (discordState.isDeafened ? 1 : 0);
+    if (state != desiredState) {
+      mConnectionManager->SetState(desiredState, inContext);
+    }
+  }
+
+  if (!mLegacyCredentials.isValid()) {
     json settings;
     EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
     json credentials;
@@ -122,6 +134,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
     if (mLegacyCredentials.isValid()) {
       ConnectToDiscordLater();
     }
+    return;
   }
 }
 
