@@ -50,6 +50,7 @@
         "MinimumVersion": "10.11"
     }
   ],
+  "SDKVersion": 2,
   "Software": {
     "MinimumVersion" : "4.1"
   }
