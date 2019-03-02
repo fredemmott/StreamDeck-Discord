@@ -113,19 +113,14 @@ void MyStreamDeckPlugin::WillAppearForAction(
     std::scoped_lock lock(mVisibleContextsMutex);
     mVisibleContexts[inContext] = inAction;
   }
-  if (!mClient) {
-    DebugPrint("Loaded settings: %s", inPayload.dump().c_str());
+  if (!(mClient || mLegacyCredentials.isValid())) {
     json settings;
     EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
     json credentials;
     EPLJSONUtils::GetObjectByName(settings, "credentials", credentials);
-    mAppId = EPLJSONUtils::GetStringByName(credentials, "appId");
-    mAppSecret = EPLJSONUtils::GetStringByName(credentials, "appSecret");
-    mOAuthToken = EPLJSONUtils::GetStringByName(credentials, "oauthToken");
-    mRefreshToken = EPLJSONUtils::GetStringByName(credentials, "refreshToken");
-    if (!mAppSecret.empty()) {
-      mTimer->stop();
-      ConnectToDiscord();
+    mLegacyCredentials = Credentials::fromJSON(credentials);
+    if (mLegacyCredentials.isValid()) {
+      ConnectToDiscordLater();
     }
   }
 }
@@ -142,61 +137,51 @@ void MyStreamDeckPlugin::WillDisappearForAction(
   }
 }
 
+void MyStreamDeckPlugin::MigrateToGlobalSettings() {
+  mCredentials = mLegacyCredentials;
+  mConnectionManager->SetGlobalSettings(mLegacyCredentials.toJSON());
+  {
+    std::scoped_lock lock(mVisibleContextsMutex);
+    const json emptyPayload({"settings", json({})});
+    for (const auto& pair : mVisibleContexts) {
+      const auto ctx = pair.first;
+      mConnectionManager->SetSettings(emptyPayload, ctx);
+    }
+  }
+}
+
+void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
+  json settings;
+  EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
+  Credentials globalSettings = Credentials::fromJSON(settings);
+  if (
+    mCredentials.appId == globalSettings.appId
+    && mCredentials.appSecret == globalSettings.appSecret) {
+    return;
+  }
+  mCredentials = globalSettings;
+  ConnectToDiscord();
+}
+
 void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inAction,
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
-
-  if (event == "getData") {
-    json outPayload{{"event", event},
-                    {"data", {{"appId", mAppId}, {"appSecret", mAppSecret}}}};
-    DebugPrint("JSON to PI: %s", outPayload.dump().c_str());
-    mConnectionManager->SendToPropertyInspector(
-      inAction, inContext, outPayload);
-    return;
-  }
-  if (event == "saveSettings") {
-    json data;
-    EPLJSONUtils::GetObjectByName(inPayload, "data", data);
-    const auto appId = EPLJSONUtils::GetStringByName(data, "appId");
-    const auto appSecret = EPLJSONUtils::GetStringByName(data, "appSecret");
-    if (appId == mAppId && appSecret == mAppSecret) {
-      return;
-    }
-    mAppId = appId;
-    mAppSecret = appSecret;
-    mOAuthToken.clear();
-    mRefreshToken.clear();
-    const json settings{
-      {"credentials", {{"appId", appId}, {"appSecret", appSecret}}}};
-    if (mClient) {
-      delete mClient;
-      mClient = nullptr;
-    }
-    for (const auto& pair : mVisibleContexts) {
-      const auto context = pair.first;
-      mConnectionManager->SetSettings(settings, context);
-    }
-    if (appId.empty() || appSecret.empty()) {
-      return;
-    }
-    mTimer->stop();
-    ConnectToDiscord();
-  }
 }
 
 void MyStreamDeckPlugin::ConnectToDiscord() {
-  if (mAppId.empty() || mAppSecret.empty()) {
-    return;
+  if (mLegacyCredentials.isValid() && !mCredentials.isValid()) {
+    MigrateToGlobalSettings();
   }
+  Credentials creds = mCredentials;
 
   DiscordClient::Credentials credentials;
-  credentials.accessToken = mOAuthToken;
-  credentials.refreshToken = mRefreshToken;
+  credentials.accessToken = creds.oauthToken;
+  credentials.refreshToken = creds.refreshToken;
   delete mClient;
-  mClient = new DiscordClient(mAppId, mAppSecret, credentials);
+  mClient = new DiscordClient(creds.appId, creds.appSecret, credentials);
   mClient->onStateChanged([=](DiscordClient::State state) {
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY:
@@ -229,18 +214,13 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     }
   });
   mClient->onCredentialsChanged([=](DiscordClient::Credentials credentials) {
-    this->mOAuthToken = credentials.accessToken;
-    this->mRefreshToken = credentials.refreshToken;
-    const json settings{{"credentials",
-                         {{"appId", this->mAppId},
-                          {"appSecret", this->mAppSecret},
-                          {"oauthToken", credentials.accessToken},
-                          {"refreshToken", credentials.refreshToken}}}};
-    std::scoped_lock lock(mVisibleContextsMutex);
-    for (const auto& pair : mVisibleContexts) {
-      const auto context = pair.first;
-      mConnectionManager->SetSettings(settings, context);
-    }
+    // Copy these in case we're migrating from legacy credentials (per-action)
+    // to global (shared between all actions)
+    mCredentials.appId = mClient->getAppId();
+    mCredentials.appSecret = mClient->getAppSecret();
+    mCredentials.oauthToken = credentials.accessToken;
+    mCredentials.refreshToken = credentials.refreshToken;
+    mConnectionManager->SetGlobalSettings(mCredentials.toJSON());
   });
   mClient->initializeWithBackgroundThread();
 }
@@ -266,9 +246,32 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
 void MyStreamDeckPlugin::DeviceDidConnect(
   const std::string& inDeviceID,
   const json& inDeviceInfo) {
-  // Nothing to do
+  if (!mCredentials.isValid()) {
+    mConnectionManager->GetGlobalSettings();
+  }
 }
 
 void MyStreamDeckPlugin::DeviceDidDisconnect(const std::string& inDeviceID) {
   // Nothing to do
+}
+
+bool MyStreamDeckPlugin::Credentials::isValid() const {
+  return !(appId.empty() || appSecret.empty());
+}
+
+json MyStreamDeckPlugin::Credentials::toJSON() const {
+  return json{{"appId", appId},
+              {"appSecret", appSecret},
+              {"oauthToken", oauthToken},
+              {"refreshToken", refreshToken}};
+}
+
+MyStreamDeckPlugin::Credentials MyStreamDeckPlugin::Credentials::fromJSON(
+  const json& data) {
+  Credentials creds;
+  creds.appId = EPLJSONUtils::GetStringByName(data, "appId");
+  creds.appSecret = EPLJSONUtils::GetStringByName(data, "appSecret");
+  creds.oauthToken = EPLJSONUtils::GetStringByName(data, "oauthToken");
+  creds.refreshToken = EPLJSONUtils::GetStringByName(data, "refreshToken");
+  return creds;
 }

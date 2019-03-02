@@ -30,6 +30,7 @@ LICENSE file.
 
 #define kESDSDKEventKeyDown "keyDown"
 #define kESDSDKEventKeyUp "keyUp"
+#define kESDSDKEventDidReceiveGlobalSettings "didReceiveGlobalSettings"
 #define kESDSDKEventWillAppear "willAppear"
 #define kESDSDKEventWillDisappear "willDisappear"
 #define kESDSDKEventDeviceDidConnect "deviceDidConnect"
@@ -46,6 +47,8 @@ LICENSE file.
 #define kESDSDKEventSetImage "setImage"
 #define kESDSDKEventShowAlert "showAlert"
 #define kESDSDKEventShowOK "showOk"
+#define kESDSDKEventGetGlobalSettings "getGlobalSettings"
+#define KESDSDKEventSetGlobalSettings "setGlobalSettings"
 #define kESDSDKEventSetSettings "setSettings"
 #define kESDSDKEventSetState "setState"
 #define kESDSDKEventSwitchToProfile "switchToProfile"

@@ -53,6 +53,9 @@ class DiscordClient {
   void initialize();
   bool processEvents();
 
+  std::string getAppId() const;
+  std::string getAppSecret() const;
+
  private:
   RpcConnection* mConnection;
   State mState;

@@ -18,8 +18,6 @@ LICENSE file.
 void ESDConnectionManager::OnOpen(
   WebsocketClient* inClient,
   websocketpp::connection_hdl inConnectionHandler) {
-  DebugPrint("OnOpen");
-
   // Register plugin with StreamDeck
   json jsonObject;
   jsonObject["event"] = mRegisterEvent;
@@ -99,6 +97,8 @@ void ESDConnectionManager::OnMessage(
         mPlugin->DeviceDidConnect(deviceID, deviceInfo);
       } else if (event == kESDSDKEventDeviceDidDisconnect) {
         mPlugin->DeviceDidDisconnect(deviceID);
+      } else if (event == kESDSDKEventDidReceiveGlobalSettings) {
+        mPlugin->DidReceiveGlobalSettings(payload);
       } else if (event == kESDSDKEventSendToPlugin) {
         mPlugin->SendToPlugin(action, context, payload, deviceID);
       }
@@ -248,6 +248,26 @@ void ESDConnectionManager::ShowOKForContext(const std::string& inContext) {
 
   jsonObject[kESDSDKCommonEvent] = kESDSDKEventShowOK;
   jsonObject[kESDSDKCommonContext] = inContext;
+
+  websocketpp::lib::error_code ec;
+  mWebsocket.send(
+    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
+
+void ESDConnectionManager::GetGlobalSettings() {
+  json jsonObject{{kESDSDKCommonEvent, kESDSDKEventGetGlobalSettings},
+                  {kESDSDKCommonContext, mPluginUUID}};
+  websocketpp::lib::error_code ec;
+  mWebsocket.send(
+    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
+
+void ESDConnectionManager::SetGlobalSettings(const json& inSettings) {
+  json jsonObject;
+
+  jsonObject[kESDSDKCommonEvent] = KESDSDKEventSetGlobalSettings;
+  jsonObject[kESDSDKCommonContext] = mPluginUUID;
+  jsonObject[kESDSDKCommonPayload] = inSettings;
 
   websocketpp::lib::error_code ec;
   mWebsocket.send(

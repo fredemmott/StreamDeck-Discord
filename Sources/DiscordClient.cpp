@@ -220,6 +220,14 @@ bool DiscordClient::processEvents() {
   return true;
 }
 
+std::string DiscordClient::getAppId() const {
+  return mAppId;
+}
+
+std::string DiscordClient::getAppSecret() const {
+  return mAppSecret;
+}
+
 DiscordClient::State DiscordClient::getState() const {
   return mState;
 }

@@ -43,6 +43,7 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
     const std::string& inContext,
     const json& inPayload,
     const std::string& inDeviceID) override;
+  void DidReceiveGlobalSettings(const json& inPayload) override;
 
   void SendToPlugin(
     const std::string& inAction,
@@ -55,15 +56,26 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
   void DeviceDidDisconnect(const std::string& inDeviceID) override;
 
  private:
+  void MigrateToGlobalSettings();
   void UpdateState(bool isMuted, bool isDeafened);
 
   std::mutex mVisibleContextsMutex;
   std::map<std::string, std::string> mVisibleContexts;
 
-  std::string mAppId;
-  std::string mAppSecret;
-  std::string mOAuthToken;
-  std::string mRefreshToken;
+  struct Credentials {
+    std::string appId;
+    std::string appSecret;
+    std::string oauthToken;
+    std::string refreshToken;
+
+    bool isValid() const;
+    json toJSON() const;
+    static Credentials fromJSON(const json&);
+  };
+  // Stored (duplicated) for each action. Used with 4.0 SDK
+  Credentials mLegacyCredentials;
+  // Global configuration; Used with 4.1 SDK
+  Credentials mCredentials;
 
   DiscordClient* mClient;
   CallBackTimer* mTimer;

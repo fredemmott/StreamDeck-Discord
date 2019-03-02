@@ -54,6 +54,9 @@ class ESDConnectionManager {
   void ShowOKForContext(const std::string& inContext);
   void SetSettings(const json& inSettings, const std::string& inContext);
   void SetState(int inState, const std::string& inContext);
+  void GetGlobalSettings();
+
+  void SetGlobalSettings(const json& inSettings);
 
  private:
   // Websocket callbacks
