@@ -255,8 +255,10 @@ void ESDConnectionManager::ShowOKForContext(const std::string& inContext) {
 }
 
 void ESDConnectionManager::LogMessage(const std::string& message) {
+  json payload;
+  payload["message"] = message;
   const json jsonObject{{kESDSDKCommonEvent, kESDSDKEventLogMessage},
-                        {kESDSDKCommonPayload, {"message", message}}};
+                        {kESDSDKCommonPayload, payload}};
   websocketpp::lib::error_code ec;
   mWebsocket.send(
     mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
