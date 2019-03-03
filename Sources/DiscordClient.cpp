@@ -264,6 +264,7 @@ void DiscordClient::setIsDeafened(bool deaf) {
 }
 
 void DiscordClient::setRpcState(RpcState state) {
+  DebugPrint("Discord RPC State: %d", state);
   mState.rpcState = state;
   if (mStateCallback) {
     mStateCallback(mState);

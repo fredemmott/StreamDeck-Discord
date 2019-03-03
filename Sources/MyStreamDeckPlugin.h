@@ -78,6 +78,7 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
   // Global configuration; Used with 4.1 SDK
   Credentials mCredentials;
 
+  std::recursive_mutex mClientMutex;
   DiscordClient* mClient;
   CallBackTimer* mTimer;
   bool mHaveRequestedGlobalSettings;

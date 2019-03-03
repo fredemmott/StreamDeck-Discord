@@ -72,27 +72,16 @@ void MyStreamDeckPlugin::KeyUpForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
+  std::scoped_lock clientLock(mClientMutex);
   if (!mClient) {
     return;
   }
   const auto clientState = mClient->getState().rpcState;
-  switch (clientState) {
-    case DiscordClient::RpcState::READY:
-      break;
-    case DiscordClient::RpcState::CONNECTION_FAILED:
-    case DiscordClient::RpcState::DISCONNECTED:
-      mTimer->stop();
-      ConnectToDiscord();
-    case DiscordClient::RpcState::AUTHENTICATION_FAILED:
-    case DiscordClient::RpcState::CONNECTING:
-    case DiscordClient::RpcState::REQUESTING_ACCESS_TOKEN:
-    case DiscordClient::RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN:
-    case DiscordClient::RpcState::REQUESTING_USER_PERMISSION:
-    case DiscordClient::RpcState::UNINITIALIZED:
-    case DiscordClient::RpcState::REQUESTING_VOICE_STATE:
-      mConnectionManager->ShowAlertForContext(inContext);
-      return;
+  if (mClient->getState().rpcState != DiscordClient::RpcState::READY) {
+    mConnectionManager->ShowAlertForContext(inContext);
+    return;
   }
+
   const auto oldState = EPLJSONUtils::GetIntByName(inPayload, "state");
   if (inAction == MUTE_ACTION_ID) {
     mClient->setIsMuted(oldState == 0);
@@ -115,10 +104,12 @@ void MyStreamDeckPlugin::WillAppearForAction(
     mVisibleContexts[inContext] = inAction;
   }
   if (!mHaveRequestedGlobalSettings) {
+    DebugPrint("Requesting global settings from WillAppear");
     mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
 
+   std::scoped_lock clientLock(mClientMutex);
   if (mClient) {
     const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
     const auto discordState = mClient->getState();
@@ -170,6 +161,7 @@ void MyStreamDeckPlugin::MigrateToGlobalSettings() {
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
+  DebugPrint("Got Global Settings: %s", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
@@ -197,7 +189,9 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
   DiscordClient::Credentials credentials;
   credentials.accessToken = creds.oauthToken;
   credentials.refreshToken = creds.refreshToken;
+  std::scoped_lock clientLock(mClientMutex);
   delete mClient;
+  mClient = nullptr;
   mClient = new DiscordClient(creds.appId, creds.appSecret, credentials);
   mClient->onStateChanged([=](DiscordClient::State state) {
     switch (state.rpcState) {
@@ -231,6 +225,7 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     }
   });
   mClient->onCredentialsChanged([=](DiscordClient::Credentials credentials) {
+    std::scoped_lock lock(mClientMutex);
     // Copy these in case we're migrating from legacy credentials (per-action)
     // to global (shared between all actions)
     mCredentials.appId = mClient->getAppId();
@@ -246,8 +241,10 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
   if (mTimer->is_running()) {
     return;
   }
+
   mTimer->start(1000, [=]() {
     DiscordClient::RpcState state = DiscordClient::RpcState::DISCONNECTED;
+    std::scoped_lock lock(mClientMutex);
     if (mClient) {
       state = mClient->getState().rpcState;
     }
