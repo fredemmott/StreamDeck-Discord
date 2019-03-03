@@ -53,8 +53,8 @@ class DiscordClientThread {
 const char* DiscordClient::getRpcStateName(RpcState state) {
   switch (state) {
 #define X(y) \
-    case RpcState::y: \
-      return #y;
+  case RpcState::y: \
+    return #y;
     DISCORD_CLIENT_RPCSTATES
 #undef X
     default:
@@ -100,10 +100,16 @@ void DiscordClient::initialize() {
   mConnection = RpcConnection::Create(mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
     DebugPrint("Disconnected from discord: %d %s", code, message.c_str());
-    if (
-      this->mState.rpcState != RpcState::CONNECTION_FAILED
-      && this->mState.rpcState != RpcState::AUTHENTICATION_FAILED) {
-      setRpcState(RpcState::DISCONNECTED);
+    switch (this->mState.rpcState) {
+      case RpcState::CONNECTING:
+        setRpcState(RpcState::CONNECTION_FAILED);
+        return;
+      case RpcState::CONNECTION_FAILED:
+      case RpcState::AUTHENTICATION_FAILED:
+        return;
+      default:
+        setRpcState(RpcState::DISCONNECTED);
+        return;
     }
   };
   mConnection->Open();
@@ -276,7 +282,9 @@ void DiscordClient::setIsDeafened(bool deaf) {
 }
 
 void DiscordClient::setRpcState(RpcState state) {
-  DebugPrint("Discord RPC State: %d", state);
+  DebugPrint(
+    "Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
+    getRpcStateName(state));
   mState.rpcState = state;
   if (mStateCallback) {
     mStateCallback(mState);

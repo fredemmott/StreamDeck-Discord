@@ -124,6 +124,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
           ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
           : (discordState.isDeafened ? 1 : 0);
     if (state != desiredState) {
+      DebugPrint("Overriding state from WillAppear");
       mConnectionManager->SetState(desiredState, inContext);
     }
   }
@@ -247,12 +248,11 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     }
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY:
-        mTimer->stop();
         this->UpdateState(state.isMuted, state.isDeafened);
-        break;
+        return;
       case DiscordClient::RpcState::CONNECTION_FAILED:
         ConnectToDiscordLater();
-        break;
+        return;
       case DiscordClient::RpcState::DISCONNECTED:
         ConnectToDiscordLater();
         // fallthrough
@@ -262,16 +262,23 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
           const auto ctx = pair.first;
           mConnectionManager->ShowAlertForContext(ctx);
         }
-        break;
-      }
-      default:
         return;
+      }
     }
+    return;
   });
-  mClient->onReady([=](DiscordClient::State) {
+  mClient->onReady([=](DiscordClient::State state) {
+    mTimer->stop();
+    const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mVisibleContextsMutex);
     for (const auto& pair : mVisibleContexts) {
       const auto ctx = pair.first;
+      const auto action = pair.second;
+      if (action == MUTE_ACTION_ID) {
+        mConnectionManager->SetState(isMuted ? 1 : 0, ctx);
+      } else if (action == DEAFEN_ACTION_ID) {
+        mConnectionManager->SetState(state.isDeafened ? 1 : 0, ctx);
+      }
       mConnectionManager->ShowOKForContext(ctx);
     }
   });
@@ -294,15 +301,14 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
   }
 
   mTimer->start(1000, [=]() {
-    DiscordClient::RpcState state = DiscordClient::RpcState::DISCONNECTED;
     std::scoped_lock lock(mClientMutex);
     if (mClient) {
-      state = mClient->getState().rpcState;
-    }
-    if (
-      state != DiscordClient::RpcState::CONNECTION_FAILED
-      && state != DiscordClient::RpcState::DISCONNECTED) {
-      return;
+      const auto state = mClient->getState().rpcState;
+      if (
+        state != DiscordClient::RpcState::CONNECTION_FAILED
+        && state != DiscordClient::RpcState::DISCONNECTED) {
+        return;
+      }
     }
     ConnectToDiscord();
   });
