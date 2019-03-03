@@ -78,6 +78,7 @@ void MyStreamDeckPlugin::KeyUpForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
+  mConnectionManager->LogMessage("Key Up: " + inAction + " " + inContext);
   std::scoped_lock clientLock(mClientMutex);
   if (!mClient) {
     return;
@@ -104,6 +105,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
+  mConnectionManager->LogMessage("Will appear: " + inAction + " " + inContext);
   // Remember the context
   {
     std::scoped_lock lock(mVisibleContextsMutex);
@@ -147,6 +149,7 @@ void MyStreamDeckPlugin::WillDisappearForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
+  mConnectionManager->LogMessage("Will disappear: " + inAction + " " + inContext);
   // Remove the context
   {
     std::scoped_lock lock(mVisibleContextsMutex);
@@ -155,6 +158,7 @@ void MyStreamDeckPlugin::WillDisappearForAction(
 }
 
 void MyStreamDeckPlugin::MigrateToGlobalSettings() {
+  mConnectionManager->LogMessage("Migrating from legacy credentials");
   mCredentials = mLegacyCredentials;
   mConnectionManager->SetGlobalSettings(mLegacyCredentials.toJSON());
   {
@@ -186,6 +190,7 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inDeviceID) {
   DebugPrint("Received plugin request: %s", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
+  mConnectionManager->LogMessage("Property inspector event: " + event);
 
   if (event == REAUTHENTICATE_PI_ACTION_ID) {
     mCredentials.oauthToken.clear();
@@ -212,6 +217,7 @@ void MyStreamDeckPlugin::SendToPlugin(
 }
 
 void MyStreamDeckPlugin::ConnectToDiscord() {
+  mConnectionManager->LogMessage("Connecting to Discord");
   if (mLegacyCredentials.isValid() && !mCredentials.isValid()) {
     MigrateToGlobalSettings();
   }
@@ -235,6 +241,15 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
 
   mClient = new DiscordClient(creds.appId, creds.appSecret, credentials);
   mClient->onStateChanged([=](DiscordClient::State state) {
+    std::stringstream logMessage;
+    logMessage << "Discord state change: "
+               << "rpcState = "
+               << DiscordClient::getRpcStateName(state.rpcState)
+               << ", muted = " << state.isMuted
+               << ", deafened = " << state.isDeafened;
+
+    mConnectionManager->LogMessage(logMessage.str());
+
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID},
              {"state", DiscordClient::getRpcStateName(state.rpcState)}};
@@ -268,6 +283,7 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     return;
   });
   mClient->onReady([=](DiscordClient::State state) {
+    mConnectionManager->LogMessage("Connected to Discord");
     mTimer->stop();
     const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mVisibleContextsMutex);
@@ -290,6 +306,11 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     mCredentials.appSecret = mClient->getAppSecret();
     mCredentials.oauthToken = credentials.accessToken;
     mCredentials.refreshToken = credentials.refreshToken;
+    std::stringstream logMessage;
+    logMessage << "Got new credentials for app id" << mCredentials.appId
+               << " - with oauth token = "
+               << (mCredentials.oauthToken.empty() ? "no" : "yes");
+    mConnectionManager->LogMessage(logMessage.str());
     mConnectionManager->SetGlobalSettings(mCredentials.toJSON());
   });
   mClient->initializeWithBackgroundThread();
@@ -299,6 +320,7 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
   if (mTimer->is_running()) {
     return;
   }
+  mConnectionManager->LogMessage("Will try to connect in 1 second...");
 
   mTimer->start(1000, [=]() {
     std::scoped_lock lock(mClientMutex);
