@@ -22,6 +22,15 @@
 			<button class="sdpi-item-value" type="button" onclick="reconnect();">Reconnect</button>
 			<button class="sdpi-item-value" type="button" onclick="reauthenticate();">Reauthenticate</button>
 		</div>
+		<details>
+			<summary>Debug Information</summary>
+			<dl>
+				<dt>State</dt>
+				<dd id="rpcState">no info</dd>
+				<dt>Last State Change</dt>
+				<dd id="rpcStateTimestamp">never</dd>
+			</dl>
+		</details>
 	</div>
 
 	<script src="common.js"></script>
@@ -42,6 +51,7 @@
 
 		$SD.on('connected', (jsonObj) => connected(jsonObj));
 		$SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
+		$SD.on('sendToPropertyInspector', (jsonObj) => sendToPropertyInspector(jsonObj));
 
 		function connected(jsonObj) {
 			uuid = jsonObj.uuid;
@@ -49,6 +59,7 @@
 			ctx = jsonObj.actionInfo.context;
 
 			$SD.api.getGlobalSettings(uuid);
+			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.getState"});
 		};
 
 		function didReceiveGlobalSettings(jsonObj) {
@@ -78,6 +89,17 @@
 		function reauthenticate() {
 			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reauthenticate"});
 		};
+
+		function sendToPropertyInspector(jsonObj) {
+			console.log(jsonObj);
+			const payload = jsonObj.payload;
+			const {event} = payload;
+			if (event != "com.fredemmott.discord.rpc.state") {
+				return;
+			}
+			document.getElementById('rpcState').innerText = payload.state;
+			document.getElementById('rpcStateTimestamp').innerText = (new Date()).toLocaleString();
+		}
 	</script>
 
 </body>

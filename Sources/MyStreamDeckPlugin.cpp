@@ -28,6 +28,8 @@ const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
 const auto RECONNECT_PI_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
 const auto REAUTHENTICATE_PI_ACTION_ID
   = "com.fredemmott.discord.rpc.reauthenticate";
+const auto GET_STATE_PI_ACTION_ID = "com.fredemmott.discord.rpc.getState";
+const auto STATE_PI_EVENT_ID = "com.fredemmott.discord.rpc.state";
 }// namespace
 
 #ifdef _MSVC_LANG
@@ -193,6 +195,18 @@ void MyStreamDeckPlugin::SendToPlugin(
 
   if (event == RECONNECT_PI_ACTION_ID) {
     ConnectToDiscord();
+    return;
+  }
+
+  if (event == GET_STATE_PI_ACTION_ID) {
+    std::scoped_lock clientLock(mClientMutex);
+    mConnectionManager->SendToPropertyInspector(
+      inAction, inContext,
+      json{{"event", STATE_PI_EVENT_ID},
+           {"state", mClient ? DiscordClient::getRpcStateName(
+                                 mClient->getState().rpcState)
+                             : "no client"}});
+    return;
   }
 }
 
@@ -207,9 +221,30 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
   credentials.refreshToken = creds.refreshToken;
   std::scoped_lock clientLock(mClientMutex);
   delete mClient;
-  mClient = nullptr;
+  {
+    const auto piPayload
+      = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
+    std::scoped_lock lock(mVisibleContextsMutex);
+    for (const auto& pair : mVisibleContexts) {
+      const auto ctx = pair.first;
+      const auto action = pair.second;
+      mConnectionManager->SendToPropertyInspector(action, ctx, piPayload);
+    }
+  }
+
   mClient = new DiscordClient(creds.appId, creds.appSecret, credentials);
   mClient->onStateChanged([=](DiscordClient::State state) {
+    const auto piPayload
+      = json{{"event", STATE_PI_EVENT_ID},
+             {"state", DiscordClient::getRpcStateName(state.rpcState)}};
+    {
+      std::scoped_lock lock(mVisibleContextsMutex);
+      for (const auto& pair : mVisibleContexts) {
+        const auto ctx = pair.first;
+        const auto action = pair.second;
+        mConnectionManager->SendToPropertyInspector(action, ctx, piPayload);
+      }
+    }
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY:
         mTimer->stop();

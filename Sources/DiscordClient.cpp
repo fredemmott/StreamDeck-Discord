@@ -50,6 +50,18 @@ class DiscordClientThread {
   DiscordClient* _client;
 };
 
+const char* DiscordClient::getRpcStateName(RpcState state) {
+  switch (state) {
+#define X(y) \
+    case RpcState::y: \
+      return #y;
+    DISCORD_CLIENT_RPCSTATES
+#undef X
+    default:
+      return "Invalid state";
+  }
+}
+
 DiscordClient::DiscordClient(
   const std::string& appId,
   const std::string& appSecret,
