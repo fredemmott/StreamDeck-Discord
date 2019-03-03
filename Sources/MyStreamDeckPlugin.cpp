@@ -24,6 +24,10 @@ LICENSE file.
 namespace {
 const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
 const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
+
+const auto RECONNECT_PI_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
+const auto REAUTHENTICATE_PI_ACTION_ID
+  = "com.fredemmott.discord.rpc.reauthenticate";
 }// namespace
 
 #ifdef _MSVC_LANG
@@ -109,7 +113,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
     mConnectionManager->GetGlobalSettings();
   }
 
-   std::scoped_lock clientLock(mClientMutex);
+  std::scoped_lock clientLock(mClientMutex);
   if (mClient) {
     const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
     const auto discordState = mClient->getState();
@@ -177,7 +181,19 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
+  DebugPrint("Received plugin request: %s", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
+
+  if (event == REAUTHENTICATE_PI_ACTION_ID) {
+    mCredentials.oauthToken.clear();
+    mCredentials.refreshToken.clear();
+    ConnectToDiscord();
+    return;
+  }
+
+  if (event == RECONNECT_PI_ACTION_ID) {
+    ConnectToDiscord();
+  }
 }
 
 void MyStreamDeckPlugin::ConnectToDiscord() {

@@ -18,8 +18,9 @@
 			<input class="sdpi-item-value" type="password" id="appSecret" onchange="saveSettings();" required />
 		</div>
 		<div class="sdpi-item">
-			<div class="sdpi-item-label">Relink</div>
-			<button class="sdpi-item-value" type="button" onclick="reconnect();">Reset Discord Connection</button>
+			<div class="sdpi-item-label">Discord</div>
+			<button class="sdpi-item-value" type="button" onclick="reconnect();">Reconnect</button>
+			<button class="sdpi-item-value" type="button" onclick="reauthenticate();">Reauthenticate</button>
 		</div>
 	</div>
 
@@ -52,7 +53,6 @@
 
 		function didReceiveGlobalSettings(jsonObj) {
 			settings = jsonObj.payload.settings;
-			console.log(settings);
 			document.getElementById('appId').value = settings.appId;
 			document.getElementById('appSecret').value = settings.appSecret;
 			document.getElementById('mainWrapper').classList.remove('hidden');
@@ -72,9 +72,11 @@
 		};
 
 		function reconnect() {
-			settings.oauthToken = "";
-			settings.refreshToken = "";
-			$SD.api.setGlobalSettings(uuid, settings);
+			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reconnect"});
+		};
+
+		function reauthenticate() {
+			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reauthenticate"});
 		};
 	</script>
 
