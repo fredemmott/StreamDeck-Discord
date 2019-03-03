@@ -52,6 +52,7 @@ class ESDConnectionManager {
     const json& inPayload);
   void ShowAlertForContext(const std::string& inContext);
   void ShowOKForContext(const std::string& inContext);
+  void LogMessage(const std::string& message);
   void SetSettings(const json& inSettings, const std::string& inContext);
   void SetState(int inState, const std::string& inContext);
   void GetGlobalSettings();

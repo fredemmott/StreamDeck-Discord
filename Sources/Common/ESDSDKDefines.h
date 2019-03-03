@@ -55,6 +55,7 @@ LICENSE file.
 #define kESDSDKEventSendToPropertyInspector "sendToPropertyInspector"
 #define kESDSDKEventSendToPlugin "sendToPlugin"
 #define kESDSDKEventOpenURL "openUrl"
+#define kESDSDKEventLogMessage "logMessage"
 
 //
 // Payloads
