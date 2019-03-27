@@ -67,7 +67,6 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
   std::stringstream ss;
   ss << "grant_type=" << urlencode(curl, grantType) << "&"
      << urlencode(curl, secretType) << "=" << urlencode(curl, secret)
-     << "&redirect_uri=" << urlencode(curl, "https://localhost/")
      << "&client_id=" << urlencode(curl, mAppId)
      << "&client_secret=" << urlencode(curl, mAppSecret)
      << "&scope=" << urlencode(curl, "rpc");

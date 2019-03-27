@@ -18,8 +18,8 @@ std::string urlencode(const std::string& in) {
   std::string out;
   for (const auto c : in) {
     if (
-      (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-      || (c >= '0' && c <= '9')) {
+      (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+      || c == '.') {
       out += c;
       continue;
     }
@@ -71,9 +71,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
     hRequest, headers, wcslen(headers), HTTP_ADDREQ_FLAG_ADD);
   std::stringstream ss;
   ss << "grant_type=" << urlencode(grantType) << "&" << urlencode(secretType)
-     << "=" << urlencode(secret)
-     << "&redirect_uri=" << urlencode("https://localhost/")
-     << "&client_id=" << urlencode(mAppId)
+     << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)
      << "&client_secret=" << urlencode(mAppSecret) << "&scope=rpc";
   const auto postData = ss.str();
   DebugPrint("Sending to discord www api: %s", postData.c_str());
