@@ -112,7 +112,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
     mVisibleContexts[inContext] = inAction;
   }
   if (!mHaveRequestedGlobalSettings) {
-    DebugPrint("Requesting global settings from WillAppear");
+    DebugPrint("[discord][plugin] Requesting global settings from WillAppear");
     mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
@@ -126,7 +126,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
           ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
           : (discordState.isDeafened ? 1 : 0);
     if (state != desiredState) {
-      DebugPrint("Overriding state from WillAppear");
+      DebugPrint("[discord][plugin] Overriding state from WillAppear");
       mConnectionManager->SetState(desiredState, inContext);
     }
   }
@@ -172,7 +172,7 @@ void MyStreamDeckPlugin::MigrateToGlobalSettings() {
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
-  DebugPrint("Got Global Settings: %s", inPayload.dump().c_str());
+  DebugPrint("[discord][plugin] Got Global Settings: %s", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
@@ -188,19 +188,19 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  DebugPrint("Received plugin request: %s", inPayload.dump().c_str());
+  DebugPrint("[discord][plugin] Received plugin request: %s", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 
   if (event == REAUTHENTICATE_PI_ACTION_ID) {
     mCredentials.oauthToken.clear();
     mCredentials.refreshToken.clear();
-    ConnectToDiscord();
+    ReconnectToDiscord();
     return;
   }
 
   if (event == RECONNECT_PI_ACTION_ID) {
-    ConnectToDiscord();
+    ReconnectToDiscord();
     return;
   }
 
@@ -214,6 +214,15 @@ void MyStreamDeckPlugin::SendToPlugin(
                              : "no client"}});
     return;
   }
+}
+
+void MyStreamDeckPlugin::ReconnectToDiscord() {
+  {
+    std::scoped_lock clientLock(mClientMutex);
+    delete mClient;
+    mClient = nullptr;
+  }
+  ConnectToDiscord();
 }
 
 void MyStreamDeckPlugin::ConnectToDiscord() {

@@ -19,12 +19,8 @@ std::string urlencode(const std::string& in) {
   for (const auto c : in) {
     if (
       (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
-      || c == '.') {
+      || c == '.' || c == '_') {
       out += c;
-      continue;
-    }
-    if (c == ' ') {
-      out += '+';
       continue;
     }
     out += '%';
@@ -72,9 +68,9 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
   std::stringstream ss;
   ss << "grant_type=" << urlencode(grantType) << "&" << urlencode(secretType)
      << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)
-     << "&client_secret=" << urlencode(mAppSecret) << "&scope=rpc";
+     << "&client_secret=" << urlencode(mAppSecret);
   const auto postData = ss.str();
-  DebugPrint("Sending to discord www api: %s", postData.c_str());
+  DebugPrint("[discord][wininet] sending: %s", postData.c_str());
 
   HttpSendRequestA(
     hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
@@ -89,7 +85,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
     response += std::string(buf, bytesRead);
   } while (bytesRead > 0);
 
-  DebugPrint("HTTP response from discord: %s", response.c_str());
+  DebugPrint("[discord][wininet] received: %s", response.c_str());
   const json parsed = json::parse(response);
   mCredentials.accessToken
     = EPLJSONUtils::GetStringByName(parsed, "access_token");

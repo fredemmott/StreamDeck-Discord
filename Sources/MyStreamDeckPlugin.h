@@ -51,6 +51,8 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
     const json& inPayload,
     const std::string& inDeviceID) override;
 
+  void ReconnectToDiscord();
+
   void DeviceDidConnect(const std::string& inDeviceID, const json& inDeviceInfo)
     override;
   void DeviceDidDisconnect(const std::string& inDeviceID) override;

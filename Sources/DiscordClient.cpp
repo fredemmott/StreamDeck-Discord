@@ -79,7 +79,9 @@ DiscordClient::DiscordClient(
 }
 
 DiscordClient::~DiscordClient() {
+  DebugPrint("[discord] destroying client");
   delete mProcessingThread;
+  mProcessingThread = 0;
   RpcConnection::Destroy(mConnection);
 }
 
@@ -99,7 +101,7 @@ void DiscordClient::initialize() {
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
   mConnection = RpcConnection::Create(mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
-    DebugPrint("Disconnected from discord: %d %s", code, message.c_str());
+    DebugPrint("[discord] disconnected - %d %s", code, message.c_str());
     switch (this->mState.rpcState) {
       case RpcState::CONNECTING:
         setRpcState(RpcState::CONNECTION_FAILED);
@@ -127,12 +129,13 @@ bool DiscordClient::processInitializationEvents() {
     return true;
   }
 
+
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
-    mConnection->Write(
-      {{"nonce", getNextNonce()},
-       {"cmd", "AUTHORIZE"},
-       {"args", {{"client_id", mAppId}, {"scopes", {"rpc"}}}}});
+    mConnection->Write({{"nonce", getNextNonce()},
+                        {"cmd", "AUTHORIZE"},
+                        {"args",
+                         {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
     return true;
   }
 
@@ -144,7 +147,6 @@ bool DiscordClient::processInitializationEvents() {
 }
 
 void DiscordClient::startAuthenticationWithNewAccessToken() {
-  mCredentialsCallback(mCredentials);
   setRpcState(
     RpcState::REQUESTING_ACCESS_TOKEN,
     RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
@@ -176,6 +178,7 @@ bool DiscordClient::processEvents() {
     setRpcState(
       RpcState::REQUESTING_USER_PERMISSION, RpcState::REQUESTING_ACCESS_TOKEN);
     mCredentials = getOAuthCredentials("authorization_code", "code", code);
+    mCredentialsCallback(mCredentials);
     if (mCredentials.accessToken.empty()) {
       setRpcState(
         RpcState::REQUESTING_ACCESS_TOKEN, RpcState::AUTHENTICATION_FAILED);
@@ -197,15 +200,17 @@ bool DiscordClient::processEvents() {
       setRpcState(
         RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN,
         RpcState::REQUESTING_ACCESS_TOKEN);
-      DebugPrint("Attempting RefreshToken");
       mCredentials = getOAuthCredentials(
         "refresh_token", "refresh_token", mCredentials.refreshToken);
+      mCredentialsCallback(mCredentials);
       if (mCredentials.accessToken.empty()) {
-        setRpcState(
-          RpcState::REQUESTING_ACCESS_TOKEN, RpcState::AUTHENTICATION_FAILED);
-        return false;
+        setRpcState(RpcState::REQUESTING_ACCESS_TOKEN, RpcState::REQUESTING_USER_PERMISSION);
+        mConnection->Write({{"nonce", getNextNonce()},
+                        {"cmd", "AUTHORIZE"},
+                        {"args",
+                         {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
+        return true;
       }
-      DebugPrint("Used RefreshToken");
       startAuthenticationWithNewAccessToken();
       return true;
     }
@@ -283,7 +288,7 @@ void DiscordClient::setIsDeafened(bool deaf) {
 
 void DiscordClient::setRpcState(RpcState state) {
   DebugPrint(
-    "Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
+    "[discord] Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
     getRpcStateName(state));
   mState.rpcState = state;
   if (mStateCallback) {

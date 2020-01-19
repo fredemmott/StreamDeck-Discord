@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\CallbackTimer.cpp" />
+    <ClCompile Include="..\Common\ESDConnectionManager.cpp" />
+    <ClCompile Include="..\Common\ESDLocalizer.cpp" />
+    <ClCompile Include="..\Common\ESDUtilitiesWindows.cpp" />
+    <ClCompile Include="..\Common\main.cpp" />
+    <ClCompile Include="..\DiscordClient.cpp" />
+    <ClCompile Include="..\Discord\connection_win.cpp" />
+    <ClCompile Include="..\Discord\rpc_connection.cpp" />
+    <ClCompile Include="..\MyStreamDeckPlugin.cpp" />
+    <ClCompile Include="DiscordClient_win.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="..\DiscordClient_curl.cpp" />
+    <ClCompile Include="get_next_nonce_win.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\CallbackTimer.h" />
+    <ClInclude Include="..\Common\EPLJSONUtils.h" />
+    <ClInclude Include="..\Common\ESDBasePlugin.h" />
+    <ClInclude Include="..\Common\ESDConnectionManager.h" />
+    <ClInclude Include="..\Common\ESDLocalizer.h" />
+    <ClInclude Include="..\Common\ESDSDKDefines.h" />
+    <ClInclude Include="..\Common\ESDUtilities.h" />
+    <ClInclude Include="..\DiscordClient.h" />
+    <ClInclude Include="..\Discord\connection.h" />
+    <ClInclude Include="..\Discord\rpc_connection.h" />
+    <ClInclude Include="..\MyStreamDeckPlugin.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="PolicyConfig.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Discord Game SDK">
+      <UniqueIdentifier>{ffbbcdec-57be-4c84-80d0-069dcf85ffbb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
