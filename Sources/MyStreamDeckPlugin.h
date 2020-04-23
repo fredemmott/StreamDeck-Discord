@@ -75,8 +75,6 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
     json toJSON() const;
     static Credentials fromJSON(const json&);
   };
-  // Stored (duplicated) for each action. Used with 4.0 SDK
-  Credentials mLegacyCredentials;
   // Global configuration; Used with 4.1 SDK
   Credentials mCredentials;
 

@@ -130,18 +130,6 @@ void MyStreamDeckPlugin::WillAppearForAction(
       mConnectionManager->SetState(desiredState, inContext);
     }
   }
-
-  if (!mLegacyCredentials.isValid()) {
-    json settings;
-    EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
-    json credentials;
-    EPLJSONUtils::GetObjectByName(settings, "credentials", credentials);
-    mLegacyCredentials = Credentials::fromJSON(credentials);
-    if (mLegacyCredentials.isValid()) {
-      ConnectToDiscordLater();
-    }
-    return;
-  }
 }
 
 void MyStreamDeckPlugin::WillDisappearForAction(
@@ -154,20 +142,6 @@ void MyStreamDeckPlugin::WillDisappearForAction(
   {
     std::scoped_lock lock(mVisibleContextsMutex);
     mVisibleContexts.erase(inContext);
-  }
-}
-
-void MyStreamDeckPlugin::MigrateToGlobalSettings() {
-  mConnectionManager->LogMessage("Migrating from legacy credentials");
-  mCredentials = mLegacyCredentials;
-  mConnectionManager->SetGlobalSettings(mLegacyCredentials.toJSON());
-  {
-    std::scoped_lock lock(mVisibleContextsMutex);
-    const json emptyPayload({"settings", json({})});
-    for (const auto& pair : mVisibleContexts) {
-      const auto ctx = pair.first;
-      mConnectionManager->SetSettings(emptyPayload, ctx);
-    }
   }
 }
 
@@ -227,9 +201,6 @@ void MyStreamDeckPlugin::ReconnectToDiscord() {
 
 void MyStreamDeckPlugin::ConnectToDiscord() {
   mConnectionManager->LogMessage("Connecting to Discord");
-  if (mLegacyCredentials.isValid() && !mCredentials.isValid()) {
-    MigrateToGlobalSettings();
-  }
   Credentials creds = mCredentials;
 
   DiscordClient::Credentials credentials;
