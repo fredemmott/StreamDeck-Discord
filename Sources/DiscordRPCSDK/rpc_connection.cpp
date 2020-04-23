@@ -99,7 +99,7 @@ void RpcConnection::Write(const json& message) {
 }
 
 bool RpcConnection::Write(const void* data, size_t length) {
-  DebugPrint("[discord][rpc] sending: %s", data);
+  DebugPrint("[discord][plugin][rpc] sending: %s", data);
   sendFrame.opcode = Opcode::Frame;
   memcpy_s(sendFrame.message, sizeof(sendFrame.message), data, length);
   sendFrame.length = (uint32_t)length;

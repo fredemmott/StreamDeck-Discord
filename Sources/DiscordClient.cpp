@@ -288,7 +288,7 @@ void DiscordClient::setIsDeafened(bool deaf) {
 
 void DiscordClient::setRpcState(RpcState state) {
   DebugPrint(
-    "[discord] Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
+    "[discord][plugin] Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
     getRpcStateName(state));
   mState.rpcState = state;
   if (mStateCallback) {
