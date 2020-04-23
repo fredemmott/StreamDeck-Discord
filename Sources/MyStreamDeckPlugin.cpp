@@ -137,7 +137,8 @@ void MyStreamDeckPlugin::WillDisappearForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  mConnectionManager->LogMessage("Will disappear: " + inAction + " " + inContext);
+  mConnectionManager->LogMessage(
+    "Will disappear: " + inAction + " " + inContext);
   // Remove the context
   {
     std::scoped_lock lock(mVisibleContextsMutex);
@@ -146,7 +147,8 @@ void MyStreamDeckPlugin::WillDisappearForAction(
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
-  DebugPrint("[discord][plugin] Got Global Settings: %s", inPayload.dump().c_str());
+  DebugPrint(
+    "[discord][plugin] Got Global Settings: %s", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
@@ -154,6 +156,9 @@ void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
     return;
   }
   mCredentials = globalSettings;
+  DebugPrint(
+    "[discord][plugin] parsed global settings: oauth: %s; refresh: %s", mCredentials.oauthToken.c_str(),
+    mCredentials.refreshToken.c_str());
   ConnectToDiscord();
 }
 
@@ -162,7 +167,8 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  DebugPrint("[discord][plugin] Received plugin request: %s", inPayload.dump().c_str());
+  DebugPrint(
+    "[discord][plugin] Received plugin request: %s", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 
