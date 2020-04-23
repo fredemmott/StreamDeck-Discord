@@ -69,7 +69,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
      << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)
      << "&client_secret=" << urlencode(mAppSecret);
   const auto postData = ss.str();
-  DebugPrint("[discord][wininet] sending: %s", postData.c_str());
+  DebugPrint("[discord][plugin][wininet] sending: %s", postData.c_str());
 
   HttpSendRequestA(
     hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
@@ -84,7 +84,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
     response += std::string(buf, bytesRead);
   } while (bytesRead > 0);
 
-  DebugPrint("[discord][wininet] received: %s", response.c_str());
+  DebugPrint("[discord][plugin][wininet] received: %s", response.c_str());
   const json parsed = json::parse(response);
   mCredentials.accessToken
     = EPLJSONUtils::GetStringByName(parsed, "access_token");
