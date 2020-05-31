@@ -8,9 +8,9 @@ else()
 endif()
 
 add_library(
-  DiscordRPC
+  DiscordRPCSDK
   STATIC
   ${SOURCES}
 )
 # Needs StreamDeckSDK as currently using EPLJSONUtils
-target_link_libraries(DiscordRPC json StreamDeckSDK)
+target_link_libraries(DiscordRPCSDK json StreamDeckSDK)

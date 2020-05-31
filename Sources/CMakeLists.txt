@@ -7,7 +7,7 @@ include_directories("${CMAKE_SOURCE_DIR}")
 
 add_subdirectory(Vendor)
 add_subdirectory(StreamDeckSDK)
-add_subdirectory(Discord)
+add_subdirectory(DiscordRPCSDK)
 
 set(
   SOURCES
@@ -26,7 +26,7 @@ add_executable(
   sddiscord
   ${SOURCES}
 )
-target_link_libraries(sddiscord StreamDeckSDK DiscordRPC)
+target_link_libraries(sddiscord StreamDeckSDK DiscordRPCSDK)
 if (APPLE)
   target_link_libraries(sddiscord curl)
 endif()

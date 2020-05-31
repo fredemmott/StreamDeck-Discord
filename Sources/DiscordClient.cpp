@@ -2,7 +2,7 @@
 
 #include "StreamDeckSDK/ESDCommon.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
-#include "Discord/rpc_connection.h"
+#include "DiscordRPCSDK/rpc_connection.h"
 
 #include <atomic>
 #include <chrono>
