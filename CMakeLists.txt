@@ -13,7 +13,11 @@ set(
   "${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}"
 )
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
+set(CXX_STANDARD_REQUIRED true)
+if (MSVC)
+  add_definitions("/Zc:__cplusplus")
+endif()
 include_directories("${CMAKE_SOURCE_DIR}")
 
 add_subdirectory(Vendor)
