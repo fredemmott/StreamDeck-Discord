@@ -1,6 +1,6 @@
 #include "StreamDeckSDK/EPLJSONUtils.h"
 #include "StreamDeckSDK/ESDCommon.h"
-#include "../DiscordClient.h"
+#include "DiscordClient.h"
 
 #include <curl/curl.h>
 #include <uuid/uuid.h>

@@ -16,9 +16,9 @@ set(
   MyStreamDeckPlugin.cpp
 )
 if (APPLE)
-  list(APPEND SOURCES macOS/DiscordClient_mac.cpp)
+  list(APPEND SOURCES DiscordClientMac.cpp)
 elseif (WIN32)
-  list(APPEND SOURCES Windows/DiscordClient_win.cpp)
+  list(APPEND SOURCES DiscordClientWindows.cpp)
 else()
   message(FATAL_ERROR "Unsupported platform")
 endif()
