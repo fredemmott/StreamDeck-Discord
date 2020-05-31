@@ -1,4 +1,4 @@
-#include "../Common/EPLJSONUtils.h"
+#include "StreamDeckSDK/EPLJSONUtils.h"
 #include "../DiscordClient.h"
 #include "../pch.h"
 

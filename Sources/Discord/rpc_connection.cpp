@@ -1,8 +1,9 @@
 #include "rpc_connection.h"
 
+#include "StreamDeckSDK/EPLJSONUtils.h"
+
 #include <algorithm>
 #include <atomic>
-#include "../Common/EPLJSONUtils.h"
 #include "../pch.h"
 
 static const int RpcVersion = 1;

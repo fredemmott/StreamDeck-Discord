@@ -12,7 +12,7 @@ LICENSE file.
 //==============================================================================
 
 #include <mutex>
-#include "Common/ESDBasePlugin.h"
+#include "StreamDeckSDK/ESDBasePlugin.h"
 
 class CallBackTimer;
 class DiscordClient;

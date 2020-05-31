@@ -17,8 +17,8 @@ LICENSE file.
 #include <mutex>
 
 #include "CallbackTimer.h"
-#include "Common/EPLJSONUtils.h"
-#include "Common/ESDConnectionManager.h"
+#include "StreamDeckSDK/EPLJSONUtils.h"
+#include "StreamDeckSDK/ESDConnectionManager.h"
 #include "DiscordClient.h"
 
 namespace {

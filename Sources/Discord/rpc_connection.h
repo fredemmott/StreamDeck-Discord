@@ -1,10 +1,13 @@
 #pragma once
 
 #include "connection.h"
-#include "../Common/EPLJSONUtils.h"
+
+#include <json.hpp>
 
 #include <functional>
 #include <string>
+
+using json = nlohmann::json;
 
 // I took this from the buffer size libuv uses for named pipes; I suspect ours would usually be much
 // smaller.

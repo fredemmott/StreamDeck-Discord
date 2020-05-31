@@ -1,4 +1,4 @@
-#### asio ####
+##### asio #####
 
 add_library(asio INTERFACE)
 target_compile_definitions(
@@ -12,7 +12,16 @@ target_include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/asio/include"
 )
 
-#### websocketpp ####
+##### json #####
+
+add_library(json INTERFACE)
+target_include_directories(
+ json 
+  INTERFACE
+  "${CMAKE_CURRENT_SOURCE_DIR}/json/src"
+)
+
+#### websocketpp #####
 
 add_library(websocketpp INTERFACE)
 target_include_directories(

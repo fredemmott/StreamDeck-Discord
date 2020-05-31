@@ -12,3 +12,5 @@ add_library(
   STATIC
   ${SOURCES}
 )
+# Needs StreamDeckSDK as currently using EPLJSONUtils
+target_link_libraries(DiscordRPC json StreamDeckSDK)
