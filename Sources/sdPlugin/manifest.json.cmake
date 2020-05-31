@@ -38,7 +38,7 @@
   "Description": "Toggle Discord Mute and Deafen.",
   "Name": "Discord Mute/Deafen", 
   "Icon": "discord-mic-off", 
-  "Version": "2.3",
+  "Version": "${CMAKE_PROJECT_VERSION}",
   "URL": "https://github.com/fredemmott/streamdeck-discord",
   "OS": [
     {
