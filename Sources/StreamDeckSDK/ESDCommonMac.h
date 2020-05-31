@@ -37,7 +37,7 @@ LICENSE file.
 // json
 //-------------------------------------------------------------------
 
-#include "../Vendor/json/src/json.hpp"
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 //-------------------------------------------------------------------

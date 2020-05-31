@@ -2,7 +2,7 @@
 
 #include "connection.h"
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <functional>
 #include <string>

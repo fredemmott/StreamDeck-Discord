@@ -21,6 +21,7 @@ target_link_libraries(
   StreamDeckSDK
   PRIVATE
   asio
+  json
 )
 target_link_libraries(
   StreamDeckSDK
