@@ -3,3 +3,4 @@ x64/
 .DS_Store
 xcuserdata
 .*.swp
+.vscode/
