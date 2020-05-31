@@ -1,3 +1,5 @@
+set(CMAKE_CXX_STANDARD 17)
+
 set(
   SOURCES
   CallbackTimer.cpp
@@ -17,8 +19,11 @@ add_executable(
   sddiscord
   ${SOURCES}
 )
-target_link_libraries(sddiscord StreamDeckSDK DiscordRPCSDK)
+target_link_libraries(sddiscord json StreamDeckSDK DiscordRPCSDK)
 if (APPLE)
   target_link_libraries(sddiscord curl)
+endif()
+if (MSVC)
+  target_link_libraries(sddiscord wininet Rpcrt4)
 endif()
 install(TARGETS sddiscord DESTINATION ${CMAKE_INSTALL_PREFIX})

@@ -1,4 +1,5 @@
-#include "Common/EPLJSONUtils.h"
+#include <StreamDeckSDK/EPLJSONUtils.h>
+#include <StreamDeckSDK/ESDCommon.h>
 #include "DiscordClient.h"
 
 #include <Rpc.h>
@@ -45,8 +46,8 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
   const std::string& secretType,
   const std::string& secret) {
   if (!hInternet) {
-    hInternet = InternetOpen(
-      L"com.fredemmott.streamdeck-discord", INTERNET_OPEN_TYPE_PRECONFIG,
+    hInternet = InternetOpenA(
+      "com.fredemmott.streamdeck-discord", INTERNET_OPEN_TYPE_PRECONFIG,
       nullptr, nullptr, 0);
   }
 
@@ -60,10 +61,10 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
     INTERNET_FLAG_SECURE, NULL);
 
   const auto headers
-    = L"Content-Type: application/x-www-form-urlencoded\r\nHost: "
-      L"discordapp.com";
-  HttpAddRequestHeaders(
-    hRequest, headers, wcslen(headers), HTTP_ADDREQ_FLAG_ADD);
+    = "Content-Type: application/x-www-form-urlencoded\r\nHost: "
+      "discordapp.com";
+  HttpAddRequestHeadersA(
+    hRequest, headers, -1, HTTP_ADDREQ_FLAG_ADD);
   std::stringstream ss;
   ss << "grant_type=" << urlencode(grantType) << "&" << urlencode(secretType)
      << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)

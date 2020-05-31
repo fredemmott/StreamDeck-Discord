@@ -47,13 +47,7 @@ void __cdecl dbgprintf(const char *format, ...);
 // json
 //-------------------------------------------------------------------
 
-#include "../Vendor/json/src/json.hpp"
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
-
-//-------------------------------------------------------------------
-// websocketpp
-//-------------------------------------------------------------------
-
-#define ASIO_STANDALONE
 
 #endif// PCH_H

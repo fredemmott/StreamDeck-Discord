@@ -13,6 +13,8 @@ LICENSE file.
 
 #pragma once
 
+#include <string>
+
 class ESDUtilities {
  public:
   static void DoSleep(int inMilliseconds);
