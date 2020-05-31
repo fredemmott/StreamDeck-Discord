@@ -1,10 +1,10 @@
 #include "rpc_connection.h"
 
+#include "StreamDeckSDK/ESDCommon.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 
 #include <algorithm>
 #include <atomic>
-#include "../pch.h"
 
 static const int RpcVersion = 1;
 static RpcConnection Instance;

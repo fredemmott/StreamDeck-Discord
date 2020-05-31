@@ -1,8 +1,8 @@
 #include "DiscordClient.h"
 
+#include "StreamDeckSDK/ESDCommon.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 #include "Discord/rpc_connection.h"
-#include "pch.h"
 
 #include <atomic>
 #include <chrono>

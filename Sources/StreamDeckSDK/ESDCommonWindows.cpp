@@ -11,7 +11,7 @@ LICENSE file.
 **/
 //==============================================================================
 
-#include "pch.h"
+#include "ESDCommonWindows.h"
 
 void __cdecl dbgprintf(const char *format, ...) {
   va_list arg;

@@ -1,6 +1,5 @@
 #include "../Common/EPLJSONUtils.h"
 #include "../DiscordClient.h"
-#include "../Windows/pch.h"
 
 #include <Rpc.h>
 #include <WinInet.h>

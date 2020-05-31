@@ -4,7 +4,7 @@ set(
   ESDLocalizer.cpp
 )
 if (WIN32)
-  list(APPEND SOURCES ESDUtilitiesWindows.cpp)
+  list(APPEND SOURCES ESDUtilitiesWindows.cpp ESDCommonWindows.cpp)
 elseif (APPLE)
   list(APPEND SOURCES ESDUtilitiesMac.cpp)
 else()
