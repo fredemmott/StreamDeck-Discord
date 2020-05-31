@@ -13,6 +13,8 @@ LICENSE file.
 
 #pragma once
 
+#include "ESDCommon.h"
+
 class ESDConnectionManager;
 
 class ESDBasePlugin {

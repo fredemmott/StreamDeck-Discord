@@ -2,7 +2,7 @@
 
 #include "Common/EPLJSONUtils.h"
 #include "Discord/rpc_connection.h"
-#include "Windows/pch.h"
+#include "pch.h"
 
 #include <atomic>
 #include <chrono>

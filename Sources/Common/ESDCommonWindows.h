@@ -18,18 +18,27 @@ LICENSE file.
 // C++ headers
 //-------------------------------------------------------------------
 
+#include <strsafe.h>
+#include <winsock2.h>
 #include <set>
 #include <string>
 #include <thread>
+#include <Windows.h>
 
 //-------------------------------------------------------------------
 // Debug logging
 //-------------------------------------------------------------------
 
+#ifdef _DEBUG
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+
+void __cdecl dbgprintf(const char *format, ...);
+
 #if DEBUG
-#include <os/log.h>
-#define DebugPrint(format, ...) \
-  os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_DEFAULT, format, ##__VA_ARGS__)
+#define DebugPrint dbgprintf
 #else
 #define DebugPrint(...) while (0)
 #endif
@@ -40,5 +49,11 @@ LICENSE file.
 
 #include "../Vendor/json/src/json.hpp"
 using json = nlohmann::json;
+
+//-------------------------------------------------------------------
+// websocketpp
+//-------------------------------------------------------------------
+
+#define ASIO_STANDALONE
 
 #endif// PCH_H

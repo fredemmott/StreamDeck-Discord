@@ -13,6 +13,8 @@ LICENSE file.
 
 #pragma once
 
+#include "ESDCommon.h"
+
 class ESDLocalizer {
  public:
   static void Initialize(const std::string &inLanguageCode);
