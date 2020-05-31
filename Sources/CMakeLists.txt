@@ -30,7 +30,7 @@ set(
 if (APPLE)
   list(APPEND SOURCES DiscordClientMac.cpp)
 elseif (WIN32)
-  list(APPEND SOURCES DiscordClientWindows.cpp)
+  list(APPEND SOURCES DiscordClientWin.cpp)
 else()
   message(FATAL_ERROR "Unsupported platform")
 endif()
