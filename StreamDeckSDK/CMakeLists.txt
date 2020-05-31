@@ -2,6 +2,7 @@ set(
   SOURCES
   ESDConnectionManager.cpp
   ESDLocalizer.cpp
+  ESDMain.cpp
 )
 if (WIN32)
   list(APPEND SOURCES ESDUtilitiesWindows.cpp ESDCommonWindows.cpp)
@@ -15,7 +16,6 @@ add_library(
   StreamDeckSDK
   STATIC
   ${SOURCES}
-  main.cpp
 )
 target_link_libraries(
   StreamDeckSDK

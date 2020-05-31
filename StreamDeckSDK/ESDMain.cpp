@@ -11,12 +11,11 @@ LICENSE file.
 **/
 //==============================================================================
 
-#include "../MyStreamDeckPlugin.h"
 #include "EPLJSONUtils.h"
 #include "ESDConnectionManager.h"
 #include "ESDLocalizer.h"
 
-int main(int argc, const char *const argv[]) {
+int esd_main(int argc, const char** argv, ESDBasePlugin* plugin) {
   if (argc != 9) {
     DebugPrint("Invalid number of parameters %d instead of 9\n", argc);
     return 1;
@@ -61,9 +60,6 @@ int main(int argc, const char *const argv[]) {
     DebugPrint("Invalid info\n");
     return 1;
   }
-
-  // Create the plugin
-  MyStreamDeckPlugin *plugin = new MyStreamDeckPlugin();
 
   // Initialize localization helper
   std::string language = "en";
