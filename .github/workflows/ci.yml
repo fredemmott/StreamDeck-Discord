@@ -13,7 +13,7 @@ jobs:
         run: |
           cmake .. \
             -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-            -DCMAKE_INSTALL_PREFIX=${{runner.temp}}/install
+            "-DCMAKE_INSTALL_PREFIX=$(echo "${{runner.temp}}/install" | tr "\\" /)"
         shell: bash
       - name: Compile
         working-directory: build
