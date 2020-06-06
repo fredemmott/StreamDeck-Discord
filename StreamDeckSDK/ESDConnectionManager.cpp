@@ -14,8 +14,8 @@ LICENSE file.
 
 #include "ESDConnectionManager.h"
 
-#include "ESDLogger.h"
 #include "EPLJSONUtils.h"
+#include "ESDLogger.h"
 
 void ESDConnectionManager::OnOpen(
   WebsocketClient* inClient,

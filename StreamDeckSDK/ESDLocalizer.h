@@ -13,8 +13,8 @@ LICENSE file.
 
 #pragma once
 
-#include <string>
 #include <nlohmann/json.hpp>
+#include <string>
 
 class ESDLocalizer {
  public:

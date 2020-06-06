@@ -48,7 +48,9 @@ class ESDConnectionManager {
     ESDSDKTarget inTarget);
   void ShowAlertForContext(const std::string& inContext);
   void ShowOKForContext(const std::string& inContext);
-  void SetSettings(const nlohmann::json& inSettings, const std::string& inContext);
+  void SetSettings(
+    const nlohmann::json& inSettings,
+    const std::string& inContext);
   void GetGlobalSettings();
   void SetGlobalSettings(const nlohmann::json& inSettings);
   void SetState(int inState, const std::string& inContext);

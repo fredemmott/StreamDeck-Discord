@@ -9,15 +9,15 @@
 #include "ESDUtilities.h"
 
 #ifdef __APPLE__
-#include <cstdio>
 #include <os/log.h>
+#include <cstdio>
 #else
-#include <strsafe.h>
 #include <Windows.h>
+#include <strsafe.h>
 #endif
 
 namespace {
-  ESDLogger* sLogger = nullptr;
+ESDLogger* sLogger = nullptr;
 }
 
 ESDLogger* ESDLogger::Get() {
@@ -45,13 +45,16 @@ void ESDLogger::LogToStreamDeckSoftware(const std::string& message) {
   mConnectionManager->LogMessage(message);
 }
 
-void ESDLogger::LogMessage(const char* file, ESDLOGGER_FORMAT_STRING(format), ...) {
+void ESDLogger::LogMessage(
+  const char* file,
+  ESDLOGGER_FORMAT_STRING(format),
+  ...) {
   va_list args;
   va_start(args, format);
   char buf[1024];
   vsnprintf(buf, sizeof(buf), format, args);
   va_end(args);
-  std::string message(ESDUtilities::GetFileName(file)+": "+buf);
+  std::string message(ESDUtilities::GetFileName(file) + ": " + buf);
   this->LogToStreamDeckSoftware(message);
 #ifndef NDEBUG
   this->LogToSystem(message);
