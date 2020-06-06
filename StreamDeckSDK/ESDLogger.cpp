@@ -63,7 +63,8 @@ void ESDLogger::LogMessage(
 
 void ESDLogger::LogToSystem(const std::string& message) {
 #ifdef __APPLE__
-  os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_DEFAULT, "%s", message.c_str());
+  os_log_with_type(
+    OS_LOG_DEFAULT, OS_LOG_TYPE_DEFAULT, "%{public}s", message.c_str());
 #else
   OutputDebugStringA((mPrefix + message).c_str());
 #endif
