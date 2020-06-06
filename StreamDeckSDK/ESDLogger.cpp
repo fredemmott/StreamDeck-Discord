@@ -10,6 +10,7 @@
 
 #ifdef __APPLE__
 #include <os/log.h>
+
 #include <cstdio>
 #else
 #include <Windows.h>

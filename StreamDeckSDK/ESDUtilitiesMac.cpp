@@ -126,21 +126,20 @@ std::string ESDUtilities::GetFolderPath(const std::string& inPath) {
 }
 
 std::string ESDUtilities::GetFileName(const std::string& inPath) {
-	//
-	// Use the platform specific delimiter
-	//
-	auto delimiter = GetFileSystemPathDelimiter();
+  //
+  // Use the platform specific delimiter
+  //
+  auto delimiter = GetFileSystemPathDelimiter();
 
-	//
-	// Remove the trailing delimiters
-	//
+  //
+  // Remove the trailing delimiters
+  //
   const auto lastNonDelim = inPath.find_last_not_of(delimiter);
   if (lastNonDelim == std::string::npos) {
     return std::string();
   }
 
-  const auto normalized
-    = inPath.substr(0, lastNonDelim + 1);
+  const auto normalized = inPath.substr(0, lastNonDelim + 1);
 
   const auto delimIdx = inPath.find_last_of(delimiter);
   if (delimIdx == std::string::npos) {
