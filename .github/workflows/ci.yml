@@ -21,9 +21,6 @@ jobs:
       - name: Install
         working-directory: build
         run: cmake --install . --config ${{matrix.build-type}}
-      - name: Test installation
-        working-directory: build
-        run: cmake --build . --target install_test --config ${{matrix.build-type}}
     strategy:
       matrix:
         os: [windows, macos]
