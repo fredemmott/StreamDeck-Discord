@@ -12,7 +12,9 @@ LICENSE file.
 //==============================================================================
 
 #include "ESDLocalizer.h"
+
 #include <fstream>
+
 #include "EPLJSONUtils.h"
 #include "ESDUtilities.h"
 

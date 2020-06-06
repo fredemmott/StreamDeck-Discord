@@ -13,11 +13,15 @@ LICENSE file.
 //==============================================================================
 
 #include "ESDConnectionManager.h"
+
+#include "ESDLogger.h"
 #include "EPLJSONUtils.h"
 
 void ESDConnectionManager::OnOpen(
   WebsocketClient* inClient,
   websocketpp::connection_hdl inConnectionHandler) {
+  ESDDebug("OnOpen");
+
   // Register plugin with StreamDeck
   json jsonObject;
   jsonObject["event"] = mRegisterEvent;
@@ -41,7 +45,7 @@ void ESDConnectionManager::OnFail(
     }
   }
 
-  DebugPrint("Failed with reason: %s\n", reason.c_str());
+  ESDDebug("Failed with reason: %s\n", reason.c_str());
 }
 
 void ESDConnectionManager::OnClose(
@@ -57,7 +61,7 @@ void ESDConnectionManager::OnClose(
     }
   }
 
-  DebugPrint("Close with reason: %s\n", reason.c_str());
+  ESDDebug("Close with reason: %s\n", reason.c_str());
 }
 
 void ESDConnectionManager::OnMessage(
@@ -66,6 +70,7 @@ void ESDConnectionManager::OnMessage(
   if (
     inMsg != NULL && inMsg->get_opcode() == websocketpp::frame::opcode::text) {
     std::string message = inMsg->get_payload();
+    ESDDebug("OnMessage: %s\n", message.c_str());
 
     try {
       json receivedJson = json::parse(message);
@@ -90,6 +95,10 @@ void ESDConnectionManager::OnMessage(
         mPlugin->WillAppearForAction(action, context, payload, deviceID);
       } else if (event == kESDSDKEventWillDisappear) {
         mPlugin->WillDisappearForAction(action, context, payload, deviceID);
+      } else if (event == kESDSDKEventDidReceiveSettings) {
+        mPlugin->DidReceiveSettings(action, context, payload, deviceID);
+      } else if (event == kESDSDKEventDidReceiveGlobalSettings) {
+        mPlugin->DidReceiveGlobalSettings(payload);
       } else if (event == kESDSDKEventDeviceDidConnect) {
         json deviceInfo;
         EPLJSONUtils::GetObjectByName(
@@ -97,8 +106,6 @@ void ESDConnectionManager::OnMessage(
         mPlugin->DeviceDidConnect(deviceID, deviceInfo);
       } else if (event == kESDSDKEventDeviceDidDisconnect) {
         mPlugin->DeviceDidDisconnect(deviceID);
-      } else if (event == kESDSDKEventDidReceiveGlobalSettings) {
-        mPlugin->DidReceiveGlobalSettings(payload);
       } else if (event == kESDSDKEventSendToPlugin) {
         mPlugin->SendToPlugin(action, context, payload, deviceID);
       }
@@ -147,11 +154,11 @@ void ESDConnectionManager::Run() {
       websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
     websocketpp::lib::error_code ec;
-    std::string uri = "ws://localhost:" + std::to_string(mPort);
+    std::string uri = "ws://127.0.0.1:" + std::to_string(mPort);
     WebsocketClient::connection_ptr connection
       = mWebsocket.get_connection(uri, ec);
     if (ec) {
-      DebugPrint("Connect initialization error: %s\n", ec.message().c_str());
+      ESDDebug("Connect initialization error: %s\n", ec.message().c_str());
       return;
     }
 
@@ -168,7 +175,7 @@ void ESDConnectionManager::Run() {
   } catch (websocketpp::exception const& e) {
     // Prevent an unused variable warning in release builds
     (void)e;
-    DebugPrint("Websocket threw an exception: %s\n", e.what());
+    ESDDebug("Websocket threw an exception: %s\n", e.what());
   }
 }
 
@@ -217,21 +224,6 @@ void ESDConnectionManager::SetImage(
     mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
 }
 
-void ESDConnectionManager::SendToPropertyInspector(
-  const std::string& inAction,
-  const std::string& inContext,
-  const json& inPayload) {
-  json jsonObject;
-  jsonObject[kESDSDKCommonEvent] = kESDSDKEventSendToPropertyInspector;
-  jsonObject[kESDSDKCommonContext] = inContext;
-  jsonObject[kESDSDKCommonAction] = inAction;
-  jsonObject[kESDSDKCommonPayload] = inPayload;
-
-  websocketpp::lib::error_code ec;
-  mWebsocket.send(
-    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
-}
-
 void ESDConnectionManager::ShowAlertForContext(const std::string& inContext) {
   json jsonObject;
 
@@ -248,36 +240,6 @@ void ESDConnectionManager::ShowOKForContext(const std::string& inContext) {
 
   jsonObject[kESDSDKCommonEvent] = kESDSDKEventShowOK;
   jsonObject[kESDSDKCommonContext] = inContext;
-
-  websocketpp::lib::error_code ec;
-  mWebsocket.send(
-    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
-}
-
-void ESDConnectionManager::LogMessage(const std::string& message) {
-  json payload;
-  payload["message"] = message;
-  const json jsonObject{{kESDSDKCommonEvent, kESDSDKEventLogMessage},
-                        {kESDSDKCommonPayload, payload}};
-  websocketpp::lib::error_code ec;
-  mWebsocket.send(
-    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
-}
-
-void ESDConnectionManager::GetGlobalSettings() {
-  json jsonObject{{kESDSDKCommonEvent, kESDSDKEventGetGlobalSettings},
-                  {kESDSDKCommonContext, mPluginUUID}};
-  websocketpp::lib::error_code ec;
-  mWebsocket.send(
-    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
-}
-
-void ESDConnectionManager::SetGlobalSettings(const json& inSettings) {
-  json jsonObject;
-
-  jsonObject[kESDSDKCommonEvent] = KESDSDKEventSetGlobalSettings;
-  jsonObject[kESDSDKCommonContext] = mPluginUUID;
-  jsonObject[kESDSDKCommonPayload] = inSettings;
 
   websocketpp::lib::error_code ec;
   mWebsocket.send(
@@ -311,4 +273,60 @@ void ESDConnectionManager::SetState(int inState, const std::string& inContext) {
   websocketpp::lib::error_code ec;
   mWebsocket.send(
     mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
+
+void ESDConnectionManager::SendToPropertyInspector(
+  const std::string& inAction,
+  const std::string& inContext,
+  const json& inPayload) {
+  json jsonObject;
+
+  jsonObject[kESDSDKCommonEvent] = kESDSDKEventSendToPropertyInspector;
+  jsonObject[kESDSDKCommonContext] = inContext;
+  jsonObject[kESDSDKCommonAction] = inAction;
+  jsonObject[kESDSDKCommonPayload] = inPayload;
+
+  websocketpp::lib::error_code ec;
+  mWebsocket.send(
+    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
+
+void ESDConnectionManager::SwitchToProfile(
+  const std::string& inDeviceID,
+  const std::string& inProfileName) {
+  if (!inDeviceID.empty()) {
+    json jsonObject;
+
+    jsonObject[kESDSDKCommonEvent] = kESDSDKEventSwitchToProfile;
+    jsonObject[kESDSDKCommonContext] = mPluginUUID;
+    jsonObject[kESDSDKCommonDevice] = inDeviceID;
+
+    if (!inProfileName.empty()) {
+      json payload;
+      payload[kESDSDKPayloadProfile] = inProfileName;
+      jsonObject[kESDSDKCommonPayload] = payload;
+    }
+
+    websocketpp::lib::error_code ec;
+    mWebsocket.send(
+      mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text,
+      ec);
+  }
+}
+
+void ESDConnectionManager::LogMessage(const std::string& inMessage) {
+  if (!inMessage.empty()) {
+    json jsonObject;
+
+    jsonObject[kESDSDKCommonEvent] = kESDSDKEventLogMessage;
+
+    json payload;
+    payload[kESDSDKPayloadMessage] = inMessage;
+    jsonObject[kESDSDKCommonPayload] = payload;
+
+    websocketpp::lib::error_code ec;
+    mWebsocket.send(
+      mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text,
+      ec);
+  }
 }

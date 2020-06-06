@@ -14,6 +14,12 @@ LICENSE file.
 #pragma once
 
 //
+// Current version of the SDK
+//
+
+#define kESDSDKVersion 2
+
+//
 // Common base-interface
 //
 
@@ -30,14 +36,19 @@ LICENSE file.
 
 #define kESDSDKEventKeyDown "keyDown"
 #define kESDSDKEventKeyUp "keyUp"
-#define kESDSDKEventDidReceiveGlobalSettings "didReceiveGlobalSettings"
 #define kESDSDKEventWillAppear "willAppear"
 #define kESDSDKEventWillDisappear "willDisappear"
 #define kESDSDKEventDeviceDidConnect "deviceDidConnect"
 #define kESDSDKEventDeviceDidDisconnect "deviceDidDisconnect"
 #define kESDSDKEventApplicationDidLaunch "applicationDidLaunch"
 #define kESDSDKEventApplicationDidTerminate "applicationDidTerminate"
+#define kESDSDKEventSystemDidWakeUp "systemDidWakeUp"
 #define kESDSDKEventTitleParametersDidChange "titleParametersDidChange"
+#define kESDSDKEventDidReceiveSettings "didReceiveSettings"
+#define kESDSDKEventDidReceiveGlobalSettings "didReceiveGlobalSettings"
+#define kESDSDKEventPropertyInspectorDidAppear "propertyInspectorDidAppear"
+#define kESDSDKEventPropertyInspectorDidDisappear \
+  "propertyInspectorDidDisappear"
 
 //
 // Functions
@@ -47,9 +58,10 @@ LICENSE file.
 #define kESDSDKEventSetImage "setImage"
 #define kESDSDKEventShowAlert "showAlert"
 #define kESDSDKEventShowOK "showOk"
-#define kESDSDKEventGetGlobalSettings "getGlobalSettings"
-#define KESDSDKEventSetGlobalSettings "setGlobalSettings"
+#define kESDSDKEventGetSettings "getSettings"
 #define kESDSDKEventSetSettings "setSettings"
+#define kESDSDKEventGetGlobalSettings "getGlobalSettings"
+#define kESDSDKEventSetGlobalSettings "setGlobalSettings"
 #define kESDSDKEventSetState "setState"
 #define kESDSDKEventSwitchToProfile "switchToProfile"
 #define kESDSDKEventSendToPropertyInspector "sendToPropertyInspector"
@@ -73,6 +85,7 @@ LICENSE file.
 #define kESDSDKPayloadProfile "profile"
 #define kESDSDKPayloadApplication "application"
 #define kESDSDKPayloadIsInMultiAction "isInMultiAction"
+#define kESDSDKPayloadMessage "message"
 
 #define kESDSDKPayloadCoordinatesColumn "column"
 #define kESDSDKPayloadCoordinatesRow "row"
@@ -84,6 +97,7 @@ LICENSE file.
 #define kESDSDKDeviceInfoID "id"
 #define kESDSDKDeviceInfoType "type"
 #define kESDSDKDeviceInfoSize "size"
+#define kESDSDKDeviceInfoName "name"
 
 #define kESDSDKDeviceInfoSizeColumns "columns"
 #define kESDSDKDeviceInfoSizeRows "rows"
@@ -105,7 +119,7 @@ LICENSE file.
 // Connection
 //
 
-#define kESDSDKConnectSocketFunction "connectSocket"
+#define kESDSDKConnectSocketFunction "connectElgatoStreamDeckSocket"
 #define kESDSDKRegisterPlugin "registerPlugin"
 #define kESDSDKRegisterPropertyInspector "registerPropertyInspector"
 #define kESDSDKPortParameter "-port"
@@ -115,8 +129,10 @@ LICENSE file.
 #define kESDSDKRegisterUUID "uuid"
 
 #define kESDSDKApplicationInfo "application"
+#define kESDSDKPluginInfo "plugin"
 #define kESDSDKDevicesInfo "devices"
 #define kESDSDKColorsInfo "colors"
+#define kESDSDKDevicePixelRatio "devicePixelRatio"
 
 #define kESDSDKApplicationInfoVersion "version"
 #define kESDSDKApplicationInfoLanguage "language"
@@ -143,4 +159,9 @@ enum {
 };
 
 typedef int ESDSDKDeviceType;
-enum { kESDSDKDeviceType_StreamDeck = 0, kESDSDKDeviceType_StreamDeckMini = 1 };
+enum {
+  kESDSDKDeviceType_StreamDeck = 0,
+  kESDSDKDeviceType_StreamDeckMini = 1,
+  kESDSDKDeviceType_StreamDeckXL = 2,
+  kESDSDKDeviceType_StreamDeckMobile = 3
+};

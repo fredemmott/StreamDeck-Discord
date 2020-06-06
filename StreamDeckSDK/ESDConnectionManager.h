@@ -14,13 +14,13 @@ LICENSE file.
 
 #pragma once
 
-#include "ESDBasePlugin.h"
-#include "ESDSDKDefines.h"
-
 #include <websocketpp/client.hpp>
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
+
+#include "ESDBasePlugin.h"
+#include "ESDSDKDefines.h"
 
 typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
 typedef websocketpp::client<websocketpp::config::asio_client> WebsocketClient;
@@ -46,18 +46,18 @@ class ESDConnectionManager {
     const std::string& inBase64ImageString,
     const std::string& inContext,
     ESDSDKTarget inTarget);
+  void ShowAlertForContext(const std::string& inContext);
+  void ShowOKForContext(const std::string& inContext);
+  void SetSettings(const nlohmann::json& inSettings, const std::string& inContext);
+  void SetState(int inState, const std::string& inContext);
   void SendToPropertyInspector(
     const std::string& inAction,
     const std::string& inContext,
-    const json& inPayload);
-  void ShowAlertForContext(const std::string& inContext);
-  void ShowOKForContext(const std::string& inContext);
-  void LogMessage(const std::string& message);
-  void SetSettings(const json& inSettings, const std::string& inContext);
-  void SetState(int inState, const std::string& inContext);
-  void GetGlobalSettings();
-
-  void SetGlobalSettings(const json& inSettings);
+    const nlohmann::json& inPayload);
+  void SwitchToProfile(
+    const std::string& inDeviceID,
+    const std::string& inProfileName);
+  void LogMessage(const std::string& inMessage);
 
  private:
   // Websocket callbacks

@@ -13,7 +13,6 @@ LICENSE file.
 
 #include <CoreFoundation/CoreFoundation.h>
 
-#include "ESDCommon.h"
 #include "ESDUtilities.h"
 
 static std::string CFStringGetStdString(

@@ -1,11 +1,12 @@
 set(
   SOURCES
   ESDConnectionManager.cpp
+  ESDLogger.cpp
   ESDLocalizer.cpp
   ESDMain.cpp
 )
 if (WIN32)
-  list(APPEND SOURCES ESDUtilitiesWindows.cpp ESDCommonWindows.cpp)
+  list(APPEND SOURCES ESDUtilitiesWindows.cpp)
 elseif (APPLE)
   list(APPEND SOURCES ESDUtilitiesMac.cpp)
 else()
