@@ -1,6 +1,6 @@
 #include "rpc_connection.h"
 
-#include "StreamDeckSDK/ESDCommon.h"
+#include "StreamDeckSDK/ESDLogger.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 
 #include <algorithm>
@@ -99,7 +99,7 @@ void RpcConnection::Write(const json& message) {
 }
 
 bool RpcConnection::Write(const void* data, size_t length) {
-  DebugPrint("[discord][plugin][rpc] sending: %s", data);
+  ESDDebug("sending: %s", data);
   sendFrame.opcode = Opcode::Frame;
   memcpy_s(sendFrame.message, sizeof(sendFrame.message), data, length);
   sendFrame.length = (uint32_t)length;
@@ -154,7 +154,7 @@ bool RpcConnection::Read(MessageFrame& readFrame) {
         return false;
       }
       case Opcode::Frame:
-        DebugPrint("[discord][rpc] received: %s", readFrame.message);
+        ESDDebug("received: %s", readFrame.message);
         return true;
       case Opcode::Ping:
         readFrame.opcode = Opcode::Pong;

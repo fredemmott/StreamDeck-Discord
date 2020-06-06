@@ -19,6 +19,7 @@ LICENSE file.
 #include "CallbackTimer.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 #include "StreamDeckSDK/ESDConnectionManager.h"
+#include "StreamDeckSDK/ESDLogger.h"
 #include "DiscordClient.h"
 
 namespace {
@@ -112,7 +113,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
     mVisibleContexts[inContext] = inAction;
   }
   if (!mHaveRequestedGlobalSettings) {
-    DebugPrint("[discord][plugin] Requesting global settings from WillAppear");
+    ESDDebug("Requesting global settings from WillAppear");
     mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
@@ -126,7 +127,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
           ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
           : (discordState.isDeafened ? 1 : 0);
     if (state != desiredState) {
-      DebugPrint("[discord][plugin] Overriding state from WillAppear");
+      ESDDebug("Overriding state from WillAppear");
       mConnectionManager->SetState(desiredState, inContext);
     }
   }
@@ -147,8 +148,8 @@ void MyStreamDeckPlugin::WillDisappearForAction(
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
-  DebugPrint(
-    "[discord][plugin] Got Global Settings: %s", inPayload.dump().c_str());
+  ESDDebug(
+    "Got Global Settings: %s", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
@@ -156,8 +157,8 @@ void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
     return;
   }
   mCredentials = globalSettings;
-  DebugPrint(
-    "[discord][plugin] parsed global settings: oauth: %s; refresh: %s", mCredentials.oauthToken.c_str(),
+  ESDDebug(
+    "parsed global settings: oauth: %s; refresh: %s", mCredentials.oauthToken.c_str(),
     mCredentials.refreshToken.c_str());
   ConnectToDiscord();
 }
@@ -167,8 +168,8 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  DebugPrint(
-    "[discord][plugin] Received plugin request: %s", inPayload.dump().c_str());
+  ESDDebug(
+    "Received plugin request: %s", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 

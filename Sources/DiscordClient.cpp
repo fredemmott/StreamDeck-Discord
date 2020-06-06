@@ -1,6 +1,6 @@
 #include "DiscordClient.h"
 
-#include <StreamDeckSDK/ESDCommon.h>
+#include <StreamDeckSDK/ESDLogger.h>
 #include <StreamDeckSDK/EPLJSONUtils.h>
 #include <DiscordRPCSDK/rpc_connection.h>
 
@@ -79,7 +79,7 @@ DiscordClient::DiscordClient(
 }
 
 DiscordClient::~DiscordClient() {
-  DebugPrint("[discord] destroying client");
+  ESDDebug("destroying client");
   delete mProcessingThread;
   mProcessingThread = 0;
   RpcConnection::Destroy(mConnection);
@@ -101,7 +101,7 @@ void DiscordClient::initialize() {
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
   mConnection = RpcConnection::Create(mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
-    DebugPrint("[discord] disconnected - %d %s", code, message.c_str());
+    ESDDebug("disconnected - %d %s", code, message.c_str());
     switch (this->mState.rpcState) {
       case RpcState::CONNECTING:
         setRpcState(RpcState::CONNECTION_FAILED);
@@ -287,8 +287,8 @@ void DiscordClient::setIsDeafened(bool deaf) {
 }
 
 void DiscordClient::setRpcState(RpcState state) {
-  DebugPrint(
-    "[discord][plugin] Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
+  ESDDebug(
+    "Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
     getRpcStateName(state));
   mState.rpcState = state;
   if (mStateCallback) {

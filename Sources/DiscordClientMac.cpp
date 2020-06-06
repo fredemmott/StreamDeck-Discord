@@ -1,5 +1,5 @@
 #include "StreamDeckSDK/EPLJSONUtils.h"
-#include "StreamDeckSDK/ESDCommon.h"
+#include "StreamDeckSDK/ESDLogger.h"
 #include "DiscordClient.h"
 
 #include <curl/curl.h>
@@ -71,7 +71,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
      << "&client_secret=" << urlencode(curl, mAppSecret)
      << "&scope=" << urlencode(curl, "rpc");
   const auto postData = ss.str();
-  DebugPrint("Sending to discord www api: %s", postData.c_str());
+  ESDDebug("Sending to discord www api: %s", postData.c_str());
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
 
   std::string response;
@@ -84,7 +84,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
   }
 
   // I tried using HttpQueryInfo to get Content-Length;
-  DebugPrint("HTTP response from discord: %s", response.c_str());
+  ESDDebug("HTTP response from discord: %s", response.c_str());
   Credentials out = mCredentials;
   const json parsed = json::parse(response);
   out.accessToken = EPLJSONUtils::GetStringByName(parsed, "access_token");

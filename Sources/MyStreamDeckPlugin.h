@@ -14,6 +14,9 @@ LICENSE file.
 #include <mutex>
 #include "StreamDeckSDK/ESDBasePlugin.h"
 
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 class CallBackTimer;
 class DiscordClient;
 
@@ -44,6 +47,7 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
     const json& inPayload,
     const std::string& inDeviceID) override;
   void DidReceiveGlobalSettings(const json& inPayload) override;
+  void DidReceiveSettings(const std::string& inAction, const std::string& inContext, const json& inPayload, const std::string& inDeviceID) override {}
 
   void SendToPlugin(
     const std::string& inAction,
