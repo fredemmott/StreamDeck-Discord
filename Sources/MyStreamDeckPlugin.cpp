@@ -17,10 +17,10 @@ LICENSE file.
 #include <mutex>
 
 #include "CallbackTimer.h"
+#include "DiscordClient.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 #include "StreamDeckSDK/ESDConnectionManager.h"
 #include "StreamDeckSDK/ESDLogger.h"
-#include "DiscordClient.h"
 
 namespace {
 const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
@@ -65,13 +65,6 @@ void MyStreamDeckPlugin::UpdateState(bool isMuted, bool isDeafened) {
       }
     }
   }
-}
-
-void MyStreamDeckPlugin::KeyDownForAction(
-  const std::string& inAction,
-  const std::string& inContext,
-  const json& inPayload,
-  const std::string& inDeviceID) {
 }
 
 void MyStreamDeckPlugin::KeyUpForAction(
@@ -148,8 +141,7 @@ void MyStreamDeckPlugin::WillDisappearForAction(
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
-  ESDDebug(
-    "Got Global Settings: %s", inPayload.dump().c_str());
+  ESDDebug("Got Global Settings: %s", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
@@ -158,8 +150,8 @@ void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
   }
   mCredentials = globalSettings;
   ESDDebug(
-    "parsed global settings: oauth: %s; refresh: %s", mCredentials.oauthToken.c_str(),
-    mCredentials.refreshToken.c_str());
+    "parsed global settings: oauth: %s; refresh: %s",
+    mCredentials.oauthToken.c_str(), mCredentials.refreshToken.c_str());
   ConnectToDiscord();
 }
 
@@ -168,8 +160,7 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  ESDDebug(
-    "Received plugin request: %s", inPayload.dump().c_str());
+  ESDDebug("Received plugin request: %s", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 
@@ -191,7 +182,7 @@ void MyStreamDeckPlugin::SendToPlugin(
       inAction, inContext,
       json{{"event", STATE_PI_EVENT_ID},
            {"state", mClient ? DiscordClient::getRpcStateName(
-                                 mClient->getState().rpcState)
+                       mClient->getState().rpcState)
                              : "no client"}});
     return;
   }
@@ -330,10 +321,6 @@ void MyStreamDeckPlugin::DeviceDidConnect(
     mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
-}
-
-void MyStreamDeckPlugin::DeviceDidDisconnect(const std::string& inDeviceID) {
-  // Nothing to do
 }
 
 bool MyStreamDeckPlugin::Credentials::isValid() const {

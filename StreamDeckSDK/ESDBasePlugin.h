@@ -28,53 +28,55 @@ class ESDBasePlugin {
     mConnectionManager = inConnectionManager;
   }
 
-  virtual void DidReceiveGlobalSettings(const nlohmann::json& inPayload) = 0;
+  virtual void DidReceiveGlobalSettings(const nlohmann::json& inPayload) {
+  }
 
   virtual void DidReceiveSettings(
     const std::string& inAction,
     const std::string& inContext,
     const nlohmann::json& inPayload,
-    const std::string& inDeviceID)
-    = 0;
+    const std::string& inDeviceID) {
+  }
 
   virtual void KeyDownForAction(
     const std::string& inAction,
     const std::string& inContext,
     const nlohmann::json& inPayload,
-    const std::string& inDeviceID)
-    = 0;
+    const std::string& inDeviceID) {
+  }
   virtual void KeyUpForAction(
     const std::string& inAction,
     const std::string& inContext,
     const nlohmann::json& inPayload,
-    const std::string& inDeviceID)
-    = 0;
+    const std::string& inDeviceID) {
+  }
 
   virtual void WillAppearForAction(
     const std::string& inAction,
     const std::string& inContext,
     const nlohmann::json& inPayload,
-    const std::string& inDeviceID)
-    = 0;
+    const std::string& inDeviceID) {
+  }
   virtual void WillDisappearForAction(
     const std::string& inAction,
     const std::string& inContext,
     const nlohmann::json& inPayload,
-    const std::string& inDeviceID)
-    = 0;
+    const std::string& inDeviceID) {
+  }
 
   virtual void DeviceDidConnect(
     const std::string& inDeviceID,
-    const nlohmann::json& inDeviceInfo)
-    = 0;
-  virtual void DeviceDidDisconnect(const std::string& inDeviceID) = 0;
+    const nlohmann::json& inDeviceInfo) {
+  }
+  virtual void DeviceDidDisconnect(const std::string& inDeviceID) {
+  }
 
   virtual void SendToPlugin(
     const std::string& inAction,
     const std::string& inContext,
     const nlohmann::json& inPayload,
-    const std::string& inDeviceID)
-    = 0;
+    const std::string& inDeviceID) {
+  }
 
  protected:
   ESDConnectionManager* mConnectionManager = nullptr;
