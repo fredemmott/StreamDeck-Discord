@@ -14,7 +14,7 @@ jobs:
           cmake .. \
             -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
             -DCMAKE_INSTALL_PREFIX=${{runner.temp}}/install
-        shell: bash
+        shell: pwsh
       - name: Compile
         working-directory: build
         run: cmake --build . --config ${{matrix.build-type}}
