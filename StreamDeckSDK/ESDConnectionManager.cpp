@@ -330,3 +330,23 @@ void ESDConnectionManager::LogMessage(const std::string& inMessage) {
       ec);
   }
 }
+
+void ESDConnectionManager::GetGlobalSettings() {
+  json jsonObject{{kESDSDKCommonEvent, kESDSDKEventGetGlobalSettings},
+                  {kESDSDKCommonContext, mPluginUUID}};
+  websocketpp::lib::error_code ec;
+  mWebsocket.send(
+    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
+
+void ESDConnectionManager::SetGlobalSettings(const json& inSettings) {
+  json jsonObject;
+
+  jsonObject[kESDSDKCommonEvent] = kESDSDKEventSetGlobalSettings;
+  jsonObject[kESDSDKCommonContext] = mPluginUUID;
+  jsonObject[kESDSDKCommonPayload] = inSettings;
+
+  websocketpp::lib::error_code ec;
+  mWebsocket.send(
+    mConnectionHandle, jsonObject.dump(), websocketpp::frame::opcode::text, ec);
+}
