@@ -2,8 +2,8 @@ include(ExternalProject)
 
 ExternalProject_Add(
   StreamDeckSDK_build
-  GIT_REPOSITORY
-  https://github.com/fredemmott/StreamDeck-CPPSDK
+  URL https://github.com/fredemmott/StreamDeck-CPPSDK/releases/download/v0.5.7/StreamDeckSDK-v0.5.7.zip
+  URL_HASH SHA512=bb1e22d047892827bf0ebb48afc3be9585342f343e0bf193213bad33bd603e6052e63587d2fa94ce686b5b21925e612493f9aeefc662d900f4c64c75ae21d761
   CMAKE_ARGS
       -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
