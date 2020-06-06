@@ -1,0 +1,30 @@
+name: Continuous Integration
+on: [push, pull_request]
+jobs:
+  build:
+    name: ${{matrix.os}}/${{matrix.build-type}}
+    runs-on: ${{matrix.os}}-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Make build directory
+        run: cmake -E make_directory build
+      - name: Configure
+        working-directory: build
+        run: |
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+            -DCMAKE_INSTALL_PREFIX=${{runner.temp}}/install
+        shell: bash
+      - name: Compile
+        working-directory: build
+        run: cmake --build . --config ${{matrix.build-type}}
+      - name: Install
+        working-directory: build
+        run: cmake --install . --config ${{matrix.build-type}}
+      - name: Test installation
+        working-directory: build
+        run: cmake --build . --target install_test --config ${{matrix.build-type}}
+    strategy:
+      matrix:
+        os: [windows, macos]
+        build-type: [Release, Debug]
