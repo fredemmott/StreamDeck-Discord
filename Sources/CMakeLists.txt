@@ -19,7 +19,7 @@ add_executable(
   sddiscord
   ${SOURCES}
 )
-target_link_libraries(sddiscord json StreamDeckSDK DiscordRPCSDK)
+target_link_libraries(sddiscord StreamDeckSDK DiscordRPCSDK)
 if (APPLE)
   target_link_libraries(sddiscord curl)
 endif()

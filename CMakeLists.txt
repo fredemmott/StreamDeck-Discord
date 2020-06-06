@@ -20,8 +20,8 @@ if (MSVC)
 endif()
 include_directories("${CMAKE_SOURCE_DIR}")
 
-add_subdirectory(Vendor)
-add_subdirectory(StreamDeckSDK)
+include("StreamDeckSDK.cmake")
+
 add_subdirectory(DiscordRPCSDK)
 add_subdirectory(Sources)
 add_subdirectory(sdplugin)
