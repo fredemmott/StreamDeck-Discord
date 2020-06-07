@@ -72,9 +72,17 @@ jobs:
       - run: ls -lR ./ ${{runner.temp}}
       - name: Build .streamDeckPlugin
         run: |
+          set +e
           ./DistributionTool -b \
             -i ${{runner.temp}}/com.fredemmott.discord.sdPlugin \
             -o .
+          if [ $? -eq 0 ]; then
+            echo "Distribution tool failed"
+            exit 1
+          else
+            set -e
+            test -f com.fredemmott.discord.streamDeckPlugin
+          fi
       - run: ls -lR ./
       - name: Build .zip
         run: |
