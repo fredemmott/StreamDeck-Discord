@@ -21,6 +21,18 @@ jobs:
       - name: Install
         working-directory: build
         run: cmake --install . --config ${{matrix.build-type}}
+      - name: Upload MacOS Executable
+        if: matrix.os == 'macos'
+        uses: actions/upload-artifact@v2
+        with:
+          name: sddiscord-Mac-${{matrix.build-type}}
+          path: build/Sources/sddiscord
+      - name: Upload Windows Executable
+        if: matrix.os == 'windows'
+        uses: actions/upload-artifact@v2
+        with:
+          name: sddiscord-Windows-${{matrix.build-type}}.exe
+          path: build/Sources/${{matrix.build-type}}/sddiscord.exe
     strategy:
       matrix:
         os: [windows, macos]
