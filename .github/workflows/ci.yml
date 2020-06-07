@@ -88,7 +88,7 @@ jobs:
         run: |
           zip \
           SDDiscord-${{matrix.build-type}}-${{github.sha}}-streamDeckPlugin.zip \
-          com.fredemmott.sddiscord.streamDeckPlugin
+          com.fredemmott.discord.streamDeckPlugin
       - name: Upload Zip
         uses: actions/upload-artifact@v2
         with:
