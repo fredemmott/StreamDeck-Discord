@@ -2,7 +2,7 @@ name: Continuous Integration
 on: [push, pull_request]
 jobs:
   build:
-    name: ${{matrix.os}}/${{matrix.build-type}}
+    name: Build (${{matrix.os}}/${{matrix.build-type}})
     runs-on: ${{matrix.os}}-latest
     steps:
       - uses: actions/checkout@v2
@@ -38,7 +38,7 @@ jobs:
         os: [windows, macos]
         build-type: [Release, Debug]
   streamDeckPlugin:
-    name: ${{matrix.build-type}} .streamDeckPlugin
+    name: Export .streamDeckPlugin (${{matrix.build-type}})
     needs: build
     runs-on: macos-latest
     steps:
@@ -48,17 +48,44 @@ jobs:
         run: |
           cmake . \
             -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-            -DCMAKE_INSTALL_PREFIX=${{runner.temp}}/com.fredemmott.sdDiscord.sdplugin
+            -DCMAKE_INSTALL_PREFIX=${{runner.temp}}/com.fredemmott.discord.sdPlugin
       - name: Install static files
         working-directory: sdPlugin
         run: make install
       - name: Download build artifacts
         uses: actions/download-artifact@v2
         with:
-          path: artifacts
-      - run: ls -lR artifacts
+          path: ${{runner.temp}}/artifacts
+      - name: Copy executables
+        working-directory: ${{runner.temp}}
+        run: |
+          install -m755 \
+            artifacts/sddiscord-Mac-${{matrix.build-type}}/sddiscord \
+            com.fredemmott.sddiscord.sdPlugin/sddiscord
+          install -m755 \
+            artifacts/sddiscord-Windows-${{matrix.build-type}}/sddiscord.exe \
+            com.fredemmott.sddiscord.sdPlugin/sddiscord.exe
       - name: Checkout DistributionTool
         uses: actions/checkout@v2
         with:
           ref: distributiontool-v1.1
       - run: ls -lR ./ ${{runner.temp}}
+      - name: Build .streamDeckPlugin
+        run: |
+          ./DistributionTool -b \
+            -i ${{runner.temp}}/com.fredemmott.discord.sdPlugin \
+            -o .
+      - run: ls -lR ./
+      - name: Build .zip
+        run: |
+          zip \
+          SDDiscord-${{matrix.build-type}}-${{github.sha}}-streamDeckPlugin.zip \
+          com.fredemmott.sddiscord.streamDeckPlugin
+      - name: Upload Zip
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{matrix.build-type}}-StreamDeckPlugin
+          path: SDDiscord-${{matrix.build-type}}-${{github.sha}}-streamDeckPlugin.zip
+    strategy:
+      matrix:
+        build-type: [Release, Debug]
