@@ -1,3 +1,5 @@
+![Continuous Integration](https://github.com/fredemmott/StreamDeck-Discord/workflows/Continuous%20Integration/badge.svg)
+
 # StreamDeck-Discord
 
 StreamDeck-Discord is a C++ plugin for the Elgato StreamDeck for controlling self-mute and self-deafen in the Discord app.
