@@ -31,7 +31,7 @@ jobs:
         if: matrix.os == 'windows'
         uses: actions/upload-artifact@v2
         with:
-          name: sddiscord-Windows-${{matrix.build-type}}.exe
+          name: sddiscord-Windows-${{matrix.build-type}}
           path: build/Sources/${{matrix.build-type}}/sddiscord.exe
     strategy:
       matrix:
