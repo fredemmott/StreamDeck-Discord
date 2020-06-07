@@ -37,3 +37,28 @@ jobs:
       matrix:
         os: [windows, macos]
         build-type: [Release, Debug]
+  streamDeckPlugin:
+    name: ${{matrix.build-type}} .streamDeckPlugin
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+      - name: Configure
+        run: |
+          cmake . \
+            -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+            -DCMAKE_INSTALL_PREFIX=${{runner.temp}}/com.fredemmott.sdDiscord.sdplugin
+      - name: Install static files
+        working-directory: sdPlugin
+        run: make install
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - run: ls -lR artifacts
+      - name: Checkout DistributionTool
+        uses: actions/checkout@v2
+        with:
+          ref: distributiontool-v1.1
+      - run: ls -lR ./ ${{runner.temp}}
