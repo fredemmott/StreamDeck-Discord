@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-project(com.fredemmott.discord.sdPlugin VERSION 2.4)
+project(com.fredemmott.discord.sdPlugin VERSION 2.4 LANGUAGES CXX)
 
 if (APPLE)
   set(
@@ -15,7 +16,8 @@ set(
 )
 
 set(CMAKE_CXX_STANDARD 11)
-set(CXX_STANDARD_REQUIRED true)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 if (MSVC)
   add_definitions("/Zc:__cplusplus")
 endif()
