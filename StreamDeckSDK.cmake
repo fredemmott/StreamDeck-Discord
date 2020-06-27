@@ -20,6 +20,7 @@ target_link_libraries(
   StreamDeckSDK
   INTERFACE
   ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}StreamDeckSDK${CMAKE_STATIC_LIBRARY_SUFFIX}
+  "${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt$<$<CONFIG:Debug>:d>${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
 target_include_directories(StreamDeckSDK INTERFACE ${INSTALL_DIR}/include)
 target_compile_definitions(StreamDeckSDK INTERFACE -DASIO_STANDALONE=1)
