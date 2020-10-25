@@ -24,6 +24,8 @@ LICENSE file.
 
 namespace {
 const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
+const auto MUTE_ACTION_ON_ID = "com.fredemmott.discord.muteon";
+const auto MUTE_ACTION_OFF_ID = "com.fredemmott.discord.muteoff";
 const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
 
 const auto RECONNECT_PI_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
@@ -86,6 +88,14 @@ void MyStreamDeckPlugin::KeyUpForAction(
   const auto oldState = EPLJSONUtils::GetIntByName(inPayload, "state");
   if (inAction == MUTE_ACTION_ID) {
     mClient->setIsMuted(oldState == 0);
+    return;
+  }
+  if (inAction == MUTE_ACTION_ON_ID) {
+    mClient->setIsMuted(1);
+    return;
+  }
+  if (inAction == MUTE_ACTION_OFF_ID) {
+    mClient->setIsMuted(0);
     return;
   }
   if (inAction == DEAFEN_ACTION_ID) {

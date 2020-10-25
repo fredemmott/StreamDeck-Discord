@@ -15,6 +15,30 @@
       "Tooltip": "Toggle Self-Mute in Discord",
       "UUID": "com.fredemmott.discord.mute"
     },
+    {
+      "Icon": "discord-mic-off",
+      "States": [
+        {
+          "Image": "discord-mic-off"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Name": "Discord Mute On",
+      "Tooltip": "Set Self-Mute in Discord to On",
+      "UUID": "com.fredemmott.discord.muteon"
+    },
+    {
+      "Icon": "discord-mic-on",
+      "States": [
+        {
+          "Image": "discord-mic-on"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Name": "Discord Mute Off",
+      "Tooltip": "Set Self-Mute in Discord to Off",
+      "UUID": "com.fredemmott.discord.muteoff"
+    },
 	{
       "Icon": "discord-deafen-off", 
       "States": [
