@@ -24,7 +24,11 @@ LICENSE file.
 
 namespace {
 const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
+const auto MUTE_ACTION_ON_ID = "com.fredemmott.discord.muteon";
+const auto MUTE_ACTION_OFF_ID = "com.fredemmott.discord.muteoff";
 const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
+const auto DEAFEN_ACTION_ON_ID = "com.fredemmott.discord.deafenon";
+const auto DEAFEN_ACTION_OFF_ID = "com.fredemmott.discord.deafenoff";
 
 const auto RECONNECT_PI_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
 const auto REAUTHENTICATE_PI_ACTION_ID
@@ -88,8 +92,24 @@ void MyStreamDeckPlugin::KeyUpForAction(
     mClient->setIsMuted(oldState == 0);
     return;
   }
+  if (inAction == MUTE_ACTION_ON_ID) {
+    mClient->setIsMuted(1);
+    return;
+  }
+  if (inAction == MUTE_ACTION_OFF_ID) {
+    mClient->setIsMuted(0);
+    return;
+  }
   if (inAction == DEAFEN_ACTION_ID) {
     mClient->setIsDeafened(oldState == 0);
+    return;
+  }
+  if (inAction == DEAFEN_ACTION_ON_ID) {
+    mClient->setIsDeafened(1);
+    return;
+  }
+  if (inAction == DEAFEN_ACTION_OFF_ID) {
+    mClient->setIsDeafened(0);
     return;
   }
 }
