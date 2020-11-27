@@ -23,17 +23,17 @@ LICENSE file.
 #include "StreamDeckSDK/ESDLogger.h"
 
 namespace {
-const auto MUTE_ACTION_ID = "com.fredemmott.discord.mute";
-const auto MUTE_ACTION_ON_ID = "com.fredemmott.discord.muteon";
-const auto MUTE_ACTION_OFF_ID = "com.fredemmott.discord.muteoff";
-const auto DEAFEN_ACTION_ID = "com.fredemmott.discord.deafen";
-const auto DEAFEN_ACTION_ON_ID = "com.fredemmott.discord.deafenon";
-const auto DEAFEN_ACTION_OFF_ID = "com.fredemmott.discord.deafenoff";
+const auto MUTE_TOGGLE_ACTION_ID = "com.fredemmott.discord.mute";
+const auto MUTE_ON_ACTION_ID = "com.fredemmott.discord.muteon";
+const auto MUTE_OFF_ACTION_ID = "com.fredemmott.discord.muteoff";
+const auto DEAFEN_TOGGLE_ACTION_ID = "com.fredemmott.discord.deafen";
+const auto DEAFEN_ON_ACTION_ID = "com.fredemmott.discord.deafenon";
+const auto DEAFEN_OFF_ACTION_ID = "com.fredemmott.discord.deafenoff";
 
-const auto RECONNECT_PI_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
-const auto REAUTHENTICATE_PI_ACTION_ID
+const auto RECONNECT_PI_TOGGLE_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
+const auto REAUTHENTICATE_PI_TOGGLE_ACTION_ID
   = "com.fredemmott.discord.rpc.reauthenticate";
-const auto GET_STATE_PI_ACTION_ID = "com.fredemmott.discord.rpc.getState";
+const auto GET_STATE_PI_TOGGLE_ACTION_ID = "com.fredemmott.discord.rpc.getState";
 const auto STATE_PI_EVENT_ID = "com.fredemmott.discord.rpc.state";
 }// namespace
 
@@ -59,11 +59,11 @@ void MyStreamDeckPlugin::UpdateState(bool isMuted, bool isDeafened) {
     for (const auto& pair : mVisibleContexts) {
       const auto& context = pair.first;
       const auto& action = pair.second;
-      if (action == MUTE_ACTION_ID) {
+      if (action == MUTE_TOGGLE_ACTION_ID) {
         mConnectionManager->SetState((isMuted || isDeafened) ? 1 : 0, context);
         continue;
       }
-      if (action == DEAFEN_ACTION_ID) {
+      if (action == DEAFEN_TOGGLE_ACTION_ID) {
         mConnectionManager->SetState(isDeafened ? 1 : 0, context);
         continue;
       }
@@ -88,27 +88,27 @@ void MyStreamDeckPlugin::KeyUpForAction(
   }
 
   const auto oldState = EPLJSONUtils::GetIntByName(inPayload, "state");
-  if (inAction == MUTE_ACTION_ID) {
+  if (inAction == MUTE_TOGGLE_ACTION_ID) {
     mClient->setIsMuted(oldState == 0);
     return;
   }
-  if (inAction == MUTE_ACTION_ON_ID) {
+  if (inAction == MUTE_ON_ACTION_ID) {
     mClient->setIsMuted(1);
     return;
   }
-  if (inAction == MUTE_ACTION_OFF_ID) {
+  if (inAction == MUTE_OFF_ACTION_ID) {
     mClient->setIsMuted(0);
     return;
   }
-  if (inAction == DEAFEN_ACTION_ID) {
+  if (inAction == DEAFEN_TOGGLE_ACTION_ID) {
     mClient->setIsDeafened(oldState == 0);
     return;
   }
-  if (inAction == DEAFEN_ACTION_ON_ID) {
+  if (inAction == DEAFEN_ON_ACTION_ID) {
     mClient->setIsDeafened(1);
     return;
   }
-  if (inAction == DEAFEN_ACTION_OFF_ID) {
+  if (inAction == DEAFEN_OFF_ACTION_ID) {
     mClient->setIsDeafened(0);
     return;
   }
@@ -136,7 +136,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
     const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
     const auto discordState = mClient->getState();
     const int desiredState
-      = inAction == MUTE_ACTION_ID
+      = inAction == MUTE_TOGGLE_ACTION_ID
           ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
           : (discordState.isDeafened ? 1 : 0);
     if (state != desiredState) {
@@ -184,19 +184,19 @@ void MyStreamDeckPlugin::SendToPlugin(
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 
-  if (event == REAUTHENTICATE_PI_ACTION_ID) {
+  if (event == REAUTHENTICATE_PI_TOGGLE_ACTION_ID) {
     mCredentials.oauthToken.clear();
     mCredentials.refreshToken.clear();
     ReconnectToDiscord();
     return;
   }
 
-  if (event == RECONNECT_PI_ACTION_ID) {
+  if (event == RECONNECT_PI_TOGGLE_ACTION_ID) {
     ReconnectToDiscord();
     return;
   }
 
-  if (event == GET_STATE_PI_ACTION_ID) {
+  if (event == GET_STATE_PI_TOGGLE_ACTION_ID) {
     std::scoped_lock clientLock(mClientMutex);
     mConnectionManager->SendToPropertyInspector(
       inAction, inContext,
@@ -288,9 +288,9 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     for (const auto& pair : mVisibleContexts) {
       const auto ctx = pair.first;
       const auto action = pair.second;
-      if (action == MUTE_ACTION_ID) {
+      if (action == MUTE_TOGGLE_ACTION_ID) {
         mConnectionManager->SetState(isMuted ? 1 : 0, ctx);
-      } else if (action == DEAFEN_ACTION_ID) {
+      } else if (action == DEAFEN_TOGGLE_ACTION_ID) {
         mConnectionManager->SetState(state.isDeafened ? 1 : 0, ctx);
       }
       mConnectionManager->ShowOKForContext(ctx);
