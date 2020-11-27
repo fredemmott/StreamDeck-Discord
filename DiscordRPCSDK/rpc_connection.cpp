@@ -99,7 +99,7 @@ void RpcConnection::Write(const json& message) {
 }
 
 bool RpcConnection::Write(const void* data, size_t length) {
-  ESDDebug("sending: %s", data);
+  ESDDebug("sending: {}", data);
   sendFrame.opcode = Opcode::Frame;
   memcpy_s(sendFrame.message, sizeof(sendFrame.message), data, length);
   sendFrame.length = (uint32_t)length;
@@ -154,7 +154,7 @@ bool RpcConnection::Read(MessageFrame& readFrame) {
         return false;
       }
       case Opcode::Frame:
-        ESDDebug("received: %s", readFrame.message);
+        ESDDebug("received: {}", readFrame.message);
         return true;
       case Opcode::Ping:
         readFrame.opcode = Opcode::Pong;

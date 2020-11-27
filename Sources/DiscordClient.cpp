@@ -101,7 +101,7 @@ void DiscordClient::initialize() {
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
   mConnection = RpcConnection::Create(mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
-    ESDDebug("disconnected - %d %s", code, message.c_str());
+    ESDDebug("disconnected - {} {}", code, message.c_str());
     switch (this->mState.rpcState) {
       case RpcState::CONNECTING:
         setRpcState(RpcState::CONNECTION_FAILED);
@@ -288,7 +288,7 @@ void DiscordClient::setIsDeafened(bool deaf) {
 
 void DiscordClient::setRpcState(RpcState state) {
   ESDDebug(
-    "Changing RPC State: %s => %s", getRpcStateName(mState.rpcState),
+    "Changing RPC State: {} => {}", getRpcStateName(mState.rpcState),
     getRpcStateName(state));
   mState.rpcState = state;
   if (mStateCallback) {

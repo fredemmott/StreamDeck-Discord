@@ -70,7 +70,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
      << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)
      << "&client_secret=" << urlencode(mAppSecret);
   const auto postData = ss.str();
-  ESDDebug("sending: %s", postData.c_str());
+  ESDDebug("sending: {}", postData.c_str());
 
   HttpSendRequestA(
     hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
@@ -85,7 +85,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
     response += std::string(buf, bytesRead);
   } while (bytesRead > 0);
 
-  ESDDebug("received: %s", response.c_str());
+  ESDDebug("received: {}", response.c_str());
   const json parsed = json::parse(response);
   mCredentials.accessToken
     = EPLJSONUtils::GetStringByName(parsed, "access_token");

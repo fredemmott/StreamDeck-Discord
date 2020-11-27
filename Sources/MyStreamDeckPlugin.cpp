@@ -161,7 +161,7 @@ void MyStreamDeckPlugin::WillDisappearForAction(
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
-  ESDDebug("Got Global Settings: %s", inPayload.dump().c_str());
+  ESDDebug("Got Global Settings: {}", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
   Credentials globalSettings = Credentials::fromJSON(settings);
@@ -170,7 +170,7 @@ void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
   }
   mCredentials = globalSettings;
   ESDDebug(
-    "parsed global settings: oauth: %s; refresh: %s",
+    "parsed global settings: oauth: {}; refresh: {}",
     mCredentials.oauthToken.c_str(), mCredentials.refreshToken.c_str());
   ConnectToDiscord();
 }
@@ -180,7 +180,7 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  ESDDebug("Received plugin request: %s", inPayload.dump().c_str());
+  ESDDebug("Received plugin request: {}", inPayload.dump().c_str());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 
