@@ -13,6 +13,6 @@ class DeafenToggleAction final : public DiscordESDAction {
   }
 
   virtual int GetDesiredState(const DiscordClient::State& state) override {
-      return state.isDeafened ? 0 : 1;
+      return state.isDeafened ? 1 : 0;
   }
 };

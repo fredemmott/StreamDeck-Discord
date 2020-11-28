@@ -10,10 +10,10 @@ class SelfMuteToggleAction final : public DiscordESDAction {
   virtual std::string GetActionID() const override { return ACTION_ID; }
 
   virtual void KeyUp(std::shared_ptr<DiscordClient> client) override {
-    client->setIsMuted(!mDiscordState.isMuted);
+    client->setIsMuted(!(mDiscordState.isMuted || mDiscordState.isDeafened));
   }
 
   virtual int GetDesiredState(const DiscordClient::State& state) override {
-      return state.isMuted ? 0 : 1;
+      return (state.isMuted || state.isDeafened) ? 1 : 0;
   }
 };
