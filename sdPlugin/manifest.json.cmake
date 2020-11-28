@@ -85,6 +85,7 @@
   "PropertyInspectorPath": "propertyinspector/index.html",
   "Description": "Toggle Discord Mute and Deafen.",
   "Name": "Discord Mute/Deafen",
+  "Category": "Discord",
   "Icon": "discord-mic-off",
   "Version": "${CMAKE_PROJECT_VERSION}",
   "URL": "https://github.com/fredemmott/streamdeck-discord",
