@@ -4,6 +4,8 @@ set(
   SOURCES
   CallbackTimer.cpp
   DiscordClient.cpp
+  DiscordESDAction.cpp
+  DiscordESDActionIDs.cpp
   MyStreamDeckPlugin.cpp
   main.cpp
 )

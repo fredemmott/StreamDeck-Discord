@@ -11,16 +11,20 @@ LICENSE file.
 **/
 //==============================================================================
 
-#include <mutex>
-#include "StreamDeckSDK/ESDBasePlugin.h"
+#include <StreamDeckSDK/ESDPlugin.h>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include <map>
+#include <mutex>
+
+#include "DiscordESDAction.h"
+
 class CallBackTimer;
 class DiscordClient;
 
-class MyStreamDeckPlugin : public ESDBasePlugin {
+class MyStreamDeckPlugin : public ESDPlugin {
  public:
   MyStreamDeckPlugin();
   virtual ~MyStreamDeckPlugin();
@@ -31,17 +35,13 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
     const json& inPayload,
     const std::string& inDeviceID) override;
 
-  void WillAppearForAction(
-    const std::string& inAction,
-    const std::string& inContext,
-    const json& inPayload,
-    const std::string& inDeviceID) override;
-  void WillDisappearForAction(
-    const std::string& inAction,
-    const std::string& inContext,
-    const json& inPayload,
-    const std::string& inDeviceID) override;
   void DidReceiveGlobalSettings(const json& inPayload) override;
+
+  void WillAppearForAction(
+  const std::string& inAction,
+  const std::string& inContext,
+  const json& inPayload,
+  const std::string& inDeviceID) override;
 
   void SendToPlugin(
     const std::string& inAction,
@@ -54,12 +54,13 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
   void DeviceDidConnect(const std::string& inDeviceID, const json& inDeviceInfo)
     override;
 
+  virtual std::shared_ptr<ESDAction> GetOrCreateAction(const std::string& action, const std::string& context) override final;
+
  private:
   void MigrateToGlobalSettings();
-  void UpdateState(bool isMuted, bool isDeafened);
 
-  std::mutex mVisibleContextsMutex;
-  std::map<std::string, std::string> mVisibleContexts;
+  std::mutex mActionsMutex;
+  std::map<std::string, std::shared_ptr<DiscordESDAction>> mActions;
 
   struct Credentials {
     std::string appId;
@@ -75,8 +76,7 @@ class MyStreamDeckPlugin : public ESDBasePlugin {
   // Global configuration; Used with 4.1 SDK
   Credentials mCredentials;
 
-  std::recursive_mutex mClientMutex;
-  DiscordClient* mClient;
+  std::shared_ptr<DiscordClient> mClient;
   CallBackTimer* mTimer;
   bool mHaveRequestedGlobalSettings;
 

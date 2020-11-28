@@ -13,27 +13,27 @@ LICENSE file.
 //==============================================================================
 
 #include "MyStreamDeckPlugin.h"
+
 #include <atomic>
 #include <mutex>
 
 #include "CallbackTimer.h"
+#include "DeafenOffAction.h"
+#include "DeafenOnAction.h"
+#include "DeafenToggleAction.h"
 #include "DiscordClient.h"
+#include "SelfMuteOffAction.h"
+#include "SelfMuteOnAction.h"
+#include "SelfMuteToggleAction.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 #include "StreamDeckSDK/ESDConnectionManager.h"
 #include "StreamDeckSDK/ESDLogger.h"
 
 namespace {
-const auto MUTE_TOGGLE_ACTION_ID = "com.fredemmott.discord.mute";
-const auto MUTE_ON_ACTION_ID = "com.fredemmott.discord.muteon";
-const auto MUTE_OFF_ACTION_ID = "com.fredemmott.discord.muteoff";
-const auto DEAFEN_TOGGLE_ACTION_ID = "com.fredemmott.discord.deafen";
-const auto DEAFEN_ON_ACTION_ID = "com.fredemmott.discord.deafenon";
-const auto DEAFEN_OFF_ACTION_ID = "com.fredemmott.discord.deafenoff";
-
-const auto RECONNECT_PI_TOGGLE_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
-const auto REAUTHENTICATE_PI_TOGGLE_ACTION_ID
+const auto RECONNECT_PI_ACTION_ID = "com.fredemmott.discord.rpc.reconnect";
+const auto REAUTHENTICATE_PI_ACTION_ID
   = "com.fredemmott.discord.rpc.reauthenticate";
-const auto GET_STATE_PI_TOGGLE_ACTION_ID = "com.fredemmott.discord.rpc.getState";
+const auto GET_STATE_PI_ACTION_ID = "com.fredemmott.discord.rpc.getState";
 const auto STATE_PI_EVENT_ID = "com.fredemmott.discord.rpc.state";
 }// namespace
 
@@ -49,26 +49,7 @@ MyStreamDeckPlugin::MyStreamDeckPlugin() {
 }
 
 MyStreamDeckPlugin::~MyStreamDeckPlugin() {
-  delete mClient;
   delete mTimer;
-}
-
-void MyStreamDeckPlugin::UpdateState(bool isMuted, bool isDeafened) {
-  if (mConnectionManager != nullptr) {
-    std::scoped_lock lock(mVisibleContextsMutex);
-    for (const auto& pair : mVisibleContexts) {
-      const auto& context = pair.first;
-      const auto& action = pair.second;
-      if (action == MUTE_TOGGLE_ACTION_ID) {
-        mConnectionManager->SetState((isMuted || isDeafened) ? 1 : 0, context);
-        continue;
-      }
-      if (action == DEAFEN_TOGGLE_ACTION_ID) {
-        mConnectionManager->SetState(isDeafened ? 1 : 0, context);
-        continue;
-      }
-    }
-  }
 }
 
 void MyStreamDeckPlugin::KeyUpForAction(
@@ -77,7 +58,6 @@ void MyStreamDeckPlugin::KeyUpForAction(
   const json& inPayload,
   const std::string& inDeviceID) {
   mConnectionManager->LogMessage("Key Up: " + inAction + " " + inContext);
-  std::scoped_lock clientLock(mClientMutex);
   if (!mClient) {
     return;
   }
@@ -87,31 +67,7 @@ void MyStreamDeckPlugin::KeyUpForAction(
     return;
   }
 
-  const auto oldState = EPLJSONUtils::GetIntByName(inPayload, "state");
-  if (inAction == MUTE_TOGGLE_ACTION_ID) {
-    mClient->setIsMuted(oldState == 0);
-    return;
-  }
-  if (inAction == MUTE_ON_ACTION_ID) {
-    mClient->setIsMuted(1);
-    return;
-  }
-  if (inAction == MUTE_OFF_ACTION_ID) {
-    mClient->setIsMuted(0);
-    return;
-  }
-  if (inAction == DEAFEN_TOGGLE_ACTION_ID) {
-    mClient->setIsDeafened(oldState == 0);
-    return;
-  }
-  if (inAction == DEAFEN_ON_ACTION_ID) {
-    mClient->setIsDeafened(1);
-    return;
-  }
-  if (inAction == DEAFEN_OFF_ACTION_ID) {
-    mClient->setIsDeafened(0);
-    return;
-  }
+  ESDPlugin::KeyUpForAction(inAction, inContext, inPayload, inDeviceID);
 }
 
 void MyStreamDeckPlugin::WillAppearForAction(
@@ -119,45 +75,12 @@ void MyStreamDeckPlugin::WillAppearForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  mConnectionManager->LogMessage("Will appear: " + inAction + " " + inContext);
-  // Remember the context
-  {
-    std::scoped_lock lock(mVisibleContextsMutex);
-    mVisibleContexts[inContext] = inAction;
-  }
   if (!mHaveRequestedGlobalSettings) {
     ESDDebug("Requesting global settings from WillAppear");
     mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
-
-  std::scoped_lock clientLock(mClientMutex);
-  if (mClient) {
-    const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
-    const auto discordState = mClient->getState();
-    const int desiredState
-      = inAction == MUTE_TOGGLE_ACTION_ID
-          ? ((discordState.isMuted || discordState.isDeafened) ? 1 : 0)
-          : (discordState.isDeafened ? 1 : 0);
-    if (state != desiredState) {
-      ESDDebug("Overriding state from WillAppear");
-      mConnectionManager->SetState(desiredState, inContext);
-    }
-  }
-}
-
-void MyStreamDeckPlugin::WillDisappearForAction(
-  const std::string& inAction,
-  const std::string& inContext,
-  const json& inPayload,
-  const std::string& inDeviceID) {
-  mConnectionManager->LogMessage(
-    "Will disappear: " + inAction + " " + inContext);
-  // Remove the context
-  {
-    std::scoped_lock lock(mVisibleContextsMutex);
-    mVisibleContexts.erase(inContext);
-  }
+  ESDPlugin::WillAppearForAction(inAction, inContext, inPayload, inDeviceID);
 }
 
 void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
@@ -180,24 +103,23 @@ void MyStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  ESDDebug("Received plugin request: {}", inPayload.dump().c_str());
+  ESDDebug("Received plugin request: {}", inPayload.dump());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   mConnectionManager->LogMessage("Property inspector event: " + event);
 
-  if (event == REAUTHENTICATE_PI_TOGGLE_ACTION_ID) {
+  if (event == REAUTHENTICATE_PI_ACTION_ID) {
     mCredentials.oauthToken.clear();
     mCredentials.refreshToken.clear();
     ReconnectToDiscord();
     return;
   }
 
-  if (event == RECONNECT_PI_TOGGLE_ACTION_ID) {
+  if (event == RECONNECT_PI_ACTION_ID) {
     ReconnectToDiscord();
     return;
   }
 
-  if (event == GET_STATE_PI_TOGGLE_ACTION_ID) {
-    std::scoped_lock clientLock(mClientMutex);
+  if (event == GET_STATE_PI_ACTION_ID) {
     mConnectionManager->SendToPropertyInspector(
       inAction, inContext,
       json{{"event", STATE_PI_EVENT_ID},
@@ -209,11 +131,7 @@ void MyStreamDeckPlugin::SendToPlugin(
 }
 
 void MyStreamDeckPlugin::ReconnectToDiscord() {
-  {
-    std::scoped_lock clientLock(mClientMutex);
-    delete mClient;
-    mClient = nullptr;
-  }
+  mClient.reset();
   ConnectToDiscord();
 }
 
@@ -224,20 +142,19 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
   DiscordClient::Credentials credentials;
   credentials.accessToken = creds.oauthToken;
   credentials.refreshToken = creds.refreshToken;
-  std::scoped_lock clientLock(mClientMutex);
-  delete mClient;
+  mClient.reset();
   {
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
-    std::scoped_lock lock(mVisibleContextsMutex);
-    for (const auto& pair : mVisibleContexts) {
-      const auto ctx = pair.first;
-      const auto action = pair.second;
-      mConnectionManager->SendToPropertyInspector(action, ctx, piPayload);
+    std::scoped_lock lock(mActionsMutex);
+    for (const auto& [ctx, action] : mActions) {
+      mConnectionManager->SendToPropertyInspector(
+        action->GetActionID(), ctx, piPayload);
     }
   }
 
-  mClient = new DiscordClient(creds.appId, creds.appSecret, credentials);
+  mClient = std::make_shared<DiscordClient>(
+    creds.appId, creds.appSecret, credentials);
   mClient->onStateChanged([=](DiscordClient::State state) {
     std::stringstream logMessage;
     logMessage << "Discord state change: "
@@ -252,16 +169,19 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
       = json{{"event", STATE_PI_EVENT_ID},
              {"state", DiscordClient::getRpcStateName(state.rpcState)}};
     {
-      std::scoped_lock lock(mVisibleContextsMutex);
-      for (const auto& pair : mVisibleContexts) {
-        const auto ctx = pair.first;
-        const auto action = pair.second;
-        mConnectionManager->SendToPropertyInspector(action, ctx, piPayload);
+      std::scoped_lock lock(mActionsMutex);
+      for (const auto& [ctx, action] : mActions) {
+        mConnectionManager->SendToPropertyInspector(
+          action->GetActionID(), ctx, piPayload);
       }
     }
     switch (state.rpcState) {
-      case DiscordClient::RpcState::READY:
-        this->UpdateState(state.isMuted, state.isDeafened);
+      case DiscordClient::RpcState::READY: {
+        std::scoped_lock lock(mActionsMutex);
+        for (const auto& [_ctx, action] : mActions) {
+          action->DiscordStateDidChange(mClient, state);
+        }
+      }
         return;
       case DiscordClient::RpcState::CONNECTION_FAILED:
         ConnectToDiscordLater();
@@ -270,9 +190,8 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
         ConnectToDiscordLater();
         // fallthrough
       case DiscordClient::RpcState::AUTHENTICATION_FAILED: {
-        std::scoped_lock lock(mVisibleContextsMutex);
-        for (const auto& pair : mVisibleContexts) {
-          const auto ctx = pair.first;
+        std::scoped_lock lock(mActionsMutex);
+        for (const auto& [ctx, _action] : mActions) {
           mConnectionManager->ShowAlertForContext(ctx);
         }
         return;
@@ -284,20 +203,13 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
     mConnectionManager->LogMessage("Connected to Discord");
     mTimer->stop();
     const bool isMuted = state.isMuted || state.isDeafened;
-    std::scoped_lock lock(mVisibleContextsMutex);
-    for (const auto& pair : mVisibleContexts) {
-      const auto ctx = pair.first;
-      const auto action = pair.second;
-      if (action == MUTE_TOGGLE_ACTION_ID) {
-        mConnectionManager->SetState(isMuted ? 1 : 0, ctx);
-      } else if (action == DEAFEN_TOGGLE_ACTION_ID) {
-        mConnectionManager->SetState(state.isDeafened ? 1 : 0, ctx);
-      }
+    std::scoped_lock lock(mActionsMutex);
+    for (const auto& [ctx, action] : mActions) {
+      action->DiscordStateDidChange(mClient, state);
       mConnectionManager->ShowOKForContext(ctx);
     }
   });
   mClient->onCredentialsChanged([=](DiscordClient::Credentials credentials) {
-    std::scoped_lock lock(mClientMutex);
     // Copy these in case we're migrating from legacy credentials (per-action)
     // to global (shared between all actions)
     mCredentials.appId = mClient->getAppId();
@@ -321,7 +233,6 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
   mConnectionManager->LogMessage("Will try to connect in 1 second...");
 
   mTimer->start(1000, [=]() {
-    std::scoped_lock lock(mClientMutex);
     if (mClient) {
       const auto state = mClient->getState().rpcState;
       if (
@@ -359,6 +270,60 @@ json MyStreamDeckPlugin::Credentials::toJSON() const {
               {"appSecret", appSecret},
               {"oauthToken", oauthToken},
               {"refreshToken", refreshToken}};
+}
+
+std::shared_ptr<ESDAction> MyStreamDeckPlugin::GetOrCreateAction(
+  const std::string& action,
+  const std::string& context) {
+  std::scoped_lock lock(mActionsMutex);
+  auto it = mActions.find(context);
+  if (it != mActions.end()) {
+    return it->second;
+  }
+
+  if (action == SelfMuteToggleAction::ACTION_ID) {
+    auto impl = std::make_shared<SelfMuteToggleAction>(
+      mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == SelfMuteOnAction::ACTION_ID) {
+    auto impl = std::make_shared<SelfMuteOnAction>(
+      mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == SelfMuteOffAction::ACTION_ID) {
+    auto impl = std::make_shared<SelfMuteOffAction>(
+      mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == DeafenToggleAction::ACTION_ID) {
+    auto impl = std::make_shared<DeafenToggleAction>(
+      mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == DeafenOnAction::ACTION_ID) {
+    auto impl
+      = std::make_shared<DeafenOnAction>(mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == DeafenOffAction::ACTION_ID) {
+    auto impl
+      = std::make_shared<DeafenOffAction>(mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  return nullptr;
 }
 
 MyStreamDeckPlugin::Credentials MyStreamDeckPlugin::Credentials::fromJSON(
