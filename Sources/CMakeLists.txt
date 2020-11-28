@@ -6,7 +6,7 @@ set(
   DiscordClient.cpp
   DiscordESDAction.cpp
   DiscordESDActionIDs.cpp
-  MyStreamDeckPlugin.cpp
+  DiscordStreamDeckPlugin.cpp
   main.cpp
 )
 if (APPLE)

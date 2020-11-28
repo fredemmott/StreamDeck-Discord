@@ -1,6 +1,6 @@
 //==============================================================================
 /**
-@file	   MyStreamDeckPlugin.cpp
+@file	   DiscordStreamDeckPlugin.cpp
 
 @brief	  Discord Plugin
 
@@ -12,7 +12,7 @@ LICENSE file.
 **/
 //==============================================================================
 
-#include "MyStreamDeckPlugin.h"
+#include "DiscordStreamDeckPlugin.h"
 
 #include <atomic>
 #include <mutex>
@@ -42,17 +42,17 @@ static_assert(_MSVC_LANG > 201402L, "C++17 not enabled in _MSVC_LANG");
 static_assert(_HAS_CXX17, "C++17 feature flag not enabled");
 #endif
 
-MyStreamDeckPlugin::MyStreamDeckPlugin() {
+DiscordStreamDeckPlugin::DiscordStreamDeckPlugin() {
   mHaveRequestedGlobalSettings = false;
   mClient = nullptr;
   mTimer = new CallBackTimer();
 }
 
-MyStreamDeckPlugin::~MyStreamDeckPlugin() {
+DiscordStreamDeckPlugin::~DiscordStreamDeckPlugin() {
   delete mTimer;
 }
 
-void MyStreamDeckPlugin::KeyUpForAction(
+void DiscordStreamDeckPlugin::KeyUpForAction(
   const std::string& inAction,
   const std::string& inContext,
   const json& inPayload,
@@ -70,7 +70,7 @@ void MyStreamDeckPlugin::KeyUpForAction(
   ESDPlugin::KeyUpForAction(inAction, inContext, inPayload, inDeviceID);
 }
 
-void MyStreamDeckPlugin::WillAppearForAction(
+void DiscordStreamDeckPlugin::WillAppearForAction(
   const std::string& inAction,
   const std::string& inContext,
   const json& inPayload,
@@ -83,7 +83,7 @@ void MyStreamDeckPlugin::WillAppearForAction(
   ESDPlugin::WillAppearForAction(inAction, inContext, inPayload, inDeviceID);
 }
 
-void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
+void DiscordStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
   ESDDebug("Got Global Settings: {}", inPayload.dump().c_str());
   json settings;
   EPLJSONUtils::GetObjectByName(inPayload, "settings", settings);
@@ -98,7 +98,7 @@ void MyStreamDeckPlugin::DidReceiveGlobalSettings(const json& inPayload) {
   ConnectToDiscord();
 }
 
-void MyStreamDeckPlugin::SendToPlugin(
+void DiscordStreamDeckPlugin::SendToPlugin(
   const std::string& inAction,
   const std::string& inContext,
   const json& inPayload,
@@ -130,12 +130,12 @@ void MyStreamDeckPlugin::SendToPlugin(
   }
 }
 
-void MyStreamDeckPlugin::ReconnectToDiscord() {
+void DiscordStreamDeckPlugin::ReconnectToDiscord() {
   mClient.reset();
   ConnectToDiscord();
 }
 
-void MyStreamDeckPlugin::ConnectToDiscord() {
+void DiscordStreamDeckPlugin::ConnectToDiscord() {
   mConnectionManager->LogMessage("Connecting to Discord");
   Credentials creds = mCredentials;
 
@@ -226,7 +226,7 @@ void MyStreamDeckPlugin::ConnectToDiscord() {
   mClient->initializeWithBackgroundThread();
 }
 
-void MyStreamDeckPlugin::ConnectToDiscordLater() {
+void DiscordStreamDeckPlugin::ConnectToDiscordLater() {
   if (mTimer->is_running()) {
     return;
   }
@@ -245,7 +245,7 @@ void MyStreamDeckPlugin::ConnectToDiscordLater() {
   });
 }
 
-void MyStreamDeckPlugin::DeviceDidConnect(
+void DiscordStreamDeckPlugin::DeviceDidConnect(
   const std::string& inDeviceID,
   const json& inDeviceInfo) {
   if (!mHaveRequestedGlobalSettings) {
@@ -254,25 +254,25 @@ void MyStreamDeckPlugin::DeviceDidConnect(
   }
 }
 
-bool MyStreamDeckPlugin::Credentials::isValid() const {
+bool DiscordStreamDeckPlugin::Credentials::isValid() const {
   return !(appId.empty() || appSecret.empty());
 }
 
-bool MyStreamDeckPlugin::Credentials::operator==(
+bool DiscordStreamDeckPlugin::Credentials::operator==(
   const Credentials& other) const {
   return appId == other.appId && appSecret == other.appSecret
          && oauthToken == other.oauthToken
          && refreshToken == other.refreshToken;
 }
 
-json MyStreamDeckPlugin::Credentials::toJSON() const {
+json DiscordStreamDeckPlugin::Credentials::toJSON() const {
   return json{{"appId", appId},
               {"appSecret", appSecret},
               {"oauthToken", oauthToken},
               {"refreshToken", refreshToken}};
 }
 
-std::shared_ptr<ESDAction> MyStreamDeckPlugin::GetOrCreateAction(
+std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   const std::string& action,
   const std::string& context) {
   std::scoped_lock lock(mActionsMutex);
@@ -326,7 +326,7 @@ std::shared_ptr<ESDAction> MyStreamDeckPlugin::GetOrCreateAction(
   return nullptr;
 }
 
-MyStreamDeckPlugin::Credentials MyStreamDeckPlugin::Credentials::fromJSON(
+DiscordStreamDeckPlugin::Credentials DiscordStreamDeckPlugin::Credentials::fromJSON(
   const json& data) {
   Credentials creds;
   creds.appId = EPLJSONUtils::GetStringByName(data, "appId");
