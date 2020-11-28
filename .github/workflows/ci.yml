@@ -4,12 +4,12 @@ jobs:
   build:
     name: Build ${{matrix.os}}/${{matrix.build-type}}
     runs-on: ${{matrix.os}}-latest
+    env:
+      CODE_SIGNING_PFX_BASE64: ${{secrets.CODE_SIGNING_PFX_BASE64}}
     steps:
       - uses: actions/checkout@v2
       - name: Fetch code-signing key
-        if: matrix.os == 'windows' && github.event_name == 'push' && github.repository == 'fredemmott/StreamDeck-Discord'
-        env:
-          CODE_SIGNING_PFX_BASE64: ${{ secrets.CODE_SIGNING_PFX_BASE64 }}
+        if: matrix.os == 'windows' && env.CODE_SIGNING_PFX_BASE64 != ''
         run: '[System.Convert]::FromBase64String($Env:CODE_SIGNING_PFX_BASE64) | Set-Content ${{runner.temp}}/MyCert.pfx -AsByteStream'
       - name: Make build directory
         run: cmake -E make_directory build
@@ -17,7 +17,7 @@ jobs:
         working-directory: build
         shell: pwsh
         run: |
-          cmake .. \
+          cmake .. `
             -DCMAKE_BUILD_TYPE=${{matrix.build-type}} `
             "-DSIGNTOOL_KEY_FILE=${{runner.temp}}/MyCert.pfx" `
             "-DCMAKE_INSTALL_PREFIX=${{runner.temp}}/install"
