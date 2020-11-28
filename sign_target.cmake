@@ -23,7 +23,7 @@ function(sign_target TARGET)
       "${SIGNTOOL_EXE}"
       ARGS
       sign
-      "/f;${SIGNTOOL_KEY_FILE}"
+      /f "${SIGNTOOL_KEY_FILE}"
       /t http://timestamp.digicert.com
       /fd SHA256
       "$<TARGET_FILE:${TARGET}>"
