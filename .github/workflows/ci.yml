@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Fetch code-signing key
-        if: matrix.os == 'windows' && secrets.CODE_SIGNING_PFX_BASE64 != ''
+        if: matrix.os == 'windows' && "${{ secrets.CODE_SIGNING_PFX_BASE64 }}" != ''
         env:
           CODE_SIGNING_PFX_BASE64: ${{ secrets.CODE_SIGNING_PFX_BASE64 }}
         run: '[System.Convert]::FromBase64String($Env:CODE_SIGNING_PFX_BASE64) | Set-Content ${{runner.temp}}/MyCert.pfx -AsByteStream'
