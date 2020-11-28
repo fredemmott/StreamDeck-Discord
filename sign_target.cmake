@@ -5,14 +5,14 @@ if(WIN32)
     ABSOLUTE CACHE
   )
   set(WINDOWS_10_KIT_DIR "${WINDOWS_10_KITS_ROOT}/bin/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" CACHE PATH "Current Windows 10 kit directory")
-  set(SIGNTOOL_KEY_ARGS "" CACHE STRING "Key arguments for signtool.exe - separate with ';'")
+  set(SIGNTOOL_KEY_FILE "" CACHE PATH "Path to signing key file in .pfx format")
   find_program(
     SIGNTOOL_EXE
     signtool
     PATHS
     "${WINDOWS_10_KIT_DIR}/x64"
     "${WINDOWS_10_KIT_DIR}/x86"
-    DOC "Path to signtool.exe if SIGNTOOL_KEY_ARGS is set"
+    DOC "Path to signtool.exe if SIGNTOOL_KEY_FILE is set"
   )
 endif()
 function(sign_target TARGET)
