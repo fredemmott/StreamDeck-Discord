@@ -16,15 +16,7 @@ if(WIN32)
   )
 endif()
 function(sign_target TARGET)
-  message(STATUS "Checking for ${SIGNTOOL_KEY_FILE} signtool key...")
-  if(SIGNTOOL_KEY_FILE) 
-    message(STATUS "Have key file var")
-  endif()
-  if(EXISTS "${SIGNTOOL_KEY_FILE}")
-    message(STATUS "key file exists")
-  endif()
-  if(SIGNTOOL_KEY_FILE AND WIN32 AND EXISTS("${SIGNTOOL_KEY_FILE}"))
-    message(STATUS "Found key file!")
+  if(SIGNTOOL_KEY_FILE AND WIN32 AND EXISTS "${SIGNTOOL_KEY_FILE}")
     add_custom_command(
       TARGET ${TARGET} POST_BUILD
       COMMAND
