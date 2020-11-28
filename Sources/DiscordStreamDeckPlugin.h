@@ -57,8 +57,6 @@ class DiscordStreamDeckPlugin : public ESDPlugin {
   virtual std::shared_ptr<ESDAction> GetOrCreateAction(const std::string& action, const std::string& context) override final;
 
  private:
-  void MigrateToGlobalSettings();
-
   std::mutex mActionsMutex;
   std::map<std::string, std::shared_ptr<DiscordESDAction>> mActions;
 
