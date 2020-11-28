@@ -92,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{matrix.build-type}}-StreamDeckPlugin
-          path: com.fredemmott.sddiscord.streamDeckPlugin
+          path: com.fredemmott.discord.streamDeckPlugin
     strategy:
       matrix:
         build-type: [Release, Debug]
@@ -123,8 +123,8 @@ jobs:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create-release.outputs.upload_url }}
-        asset_path: ${{runner.temp}}/artifacts/Release-StreamDeckPlugin/com.fredemmott.sddiscord.streamDeckPlugin
-        asset_name: com.fredemmott.sddiscord.streamDeckPlugin
+        asset_path: ${{runner.temp}}/artifacts/Release-StreamDeckPlugin/com.fredemmott.discord.streamDeckPlugin
+        asset_name: com.fredemmott.discord.streamDeckPlugin
         asset_content_type: application/octet-stream
     - name: Attach Debug Build
       uses: actions/upload-release-asset@v1
@@ -132,6 +132,6 @@ jobs:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create-release.outputs.upload_url }}
-        asset_path: ${{runner.temp}}/artifacts/Debug-StreamDeckPlugin/com.fredemmott.sddiscord.streamDeckPlugin
-        asset_name: debug-com.fredemmott.sddiscord.streamDeckPlugin
+        asset_path: ${{runner.temp}}/artifacts/Debug-StreamDeckPlugin/com.fredemmott.discord.streamDeckPlugin
+        asset_name: debug-com.fredemmott.discord.streamDeckPlugin
         asset_content_type: application/octet-stream
