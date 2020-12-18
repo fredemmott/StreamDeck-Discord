@@ -19,6 +19,14 @@ Installation and demo video: https://youtu.be/MSMbRtj2fFA
 1. Discord should now ask you for permission a few times, then you're done :)
 1. You might get a firewall prompt. You need to allow it.
 
+# Need Help?
+
+1. Double-check *everything* exactly matches. `https://localhost/` is not the same as `https://localhost`, or
+   `http://localhost/`
+2. If that does not resolve the problem, sign up/sign in to github, and click 'New discussion' on https://github.com/fredemmott/StreamDeck-Discord/discussions ; create an entry in the "Help" category
+
+I'm not able to offer 1:1 help, e.g. via Discord.
+
 # Limitations
 
 - only one application can control Discord voice settings at a time. Stop anything else that controls Discord mute/deafen, such as the Discord applet in Logitech Gaming Software
