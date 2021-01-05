@@ -77,6 +77,45 @@
       "Name": "Set Discord Deafen Off",
       "Tooltip": "Set Deafen in Discord to Off",
       "UUID": "com.fredemmott.discord.deafenoff"
+    },
+    {
+      "Icon": "discord-deafen-off",
+      "States": [
+        {
+          "Image": "discord-deafen-off"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Name": "Set Discord PTT OFF",
+      "Tooltip": "Set PTT in Discord to Off",
+      "UUID": "com.fredemmott.discord.pttoff"
+    },
+    {
+      "Icon": "discord-deafen-on",
+      "States": [
+        {
+          "Image": "discord-deafen-on"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Name": "Set Discord PTT ON",
+      "Tooltip": "Set PTT in Discord to ON",
+      "UUID": "com.fredemmott.discord.ptton"
+    },
+    {
+      "Icon": "discord-deafen-off",
+      "States": [
+        {
+          "Image": "discord-deafen-off"
+        },
+		{
+		  "Image": "discord-deafen-on"
+		}
+      ],
+      "SupportedInMultiActions": false,
+	    "Name": "Toggle Discord PTT",
+      "Tooltip": "Toggle PTT in Discord",
+      "UUID": "com.fredemmott.discord.ptt"
     }
   ],
   "Author": "Fred Emmott",

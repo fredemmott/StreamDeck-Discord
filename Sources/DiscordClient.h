@@ -25,6 +25,7 @@ class DiscordClient {
     RpcState rpcState;
     bool isDeafened;
     bool isMuted;
+    bool isPTT;
   };
   typedef std::function<void(const State&)> StateCallback;
   struct Credentials {
@@ -46,6 +47,7 @@ class DiscordClient {
 
   void setIsMuted(bool);
   void setIsDeafened(bool);
+  void setIsPTT(bool);
 
   // Easy mode...
   void initializeWithBackgroundThread();

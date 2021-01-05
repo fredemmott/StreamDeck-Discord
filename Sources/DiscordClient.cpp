@@ -231,6 +231,21 @@ bool DiscordClient::processEvents() {
     if (haveData) {
       mState.isMuted = EPLJSONUtils::GetBoolByName(data, "mute");
       mState.isDeafened = EPLJSONUtils::GetBoolByName(data, "deaf");
+      
+      json mode;
+      const bool haveMode = EPLJSONUtils::GetObjectByName(data, "mode", mode);
+      if (haveMode)
+      {
+        const auto type = EPLJSONUtils::GetStringByName(mode, "type");
+        if (type == "PUSH_TO_TALK")
+        {
+          mState.isPTT = true;
+        }
+        else if (type == "VOICE_ACTIVITY")
+        {
+          mState.isPTT = false;
+        }
+      }
       if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
         mState.rpcState = RpcState::READY;
         mReadyCallback(mState);
@@ -282,6 +297,15 @@ void DiscordClient::setIsMuted(bool mute) {
 void DiscordClient::setIsDeafened(bool deaf) {
   json args;
   args["deaf"] = deaf;
+  mConnection->Write(
+    {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
+}
+
+void DiscordClient::setIsPTT(bool isPTT) {
+  json mode;
+  mode["type"] = (isPTT) ? "PUSH_TO_TALK" : "VOICE_ACTIVITY";
+  json args;
+  args["mode"] = mode;
   mConnection->Write(
     {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
 }
