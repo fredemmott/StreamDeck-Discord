@@ -25,6 +25,9 @@ LICENSE file.
 #include "SelfMuteOffAction.h"
 #include "SelfMuteOnAction.h"
 #include "SelfMuteToggleAction.h"
+#include "PTTOffAction.h"
+#include "PTTOnAction.h"
+#include "PTTToggleAction.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 #include "StreamDeckSDK/ESDConnectionManager.h"
 #include "StreamDeckSDK/ESDLogger.h"
@@ -317,6 +320,27 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   if (action == DeafenOffAction::ACTION_ID) {
     auto impl
       = std::make_shared<DeafenOffAction>(mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == PTTToggleAction::ACTION_ID) {
+    auto impl = std::make_shared<PTTToggleAction>(
+      mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == PTTOnAction::ACTION_ID) {
+    auto impl
+      = std::make_shared<PTTOnAction>(mConnectionManager, context, mClient);
+    mActions.emplace(context, impl);
+    return impl;
+  }
+
+  if (action == PTTOffAction::ACTION_ID) {
+    auto impl
+      = std::make_shared<PTTOffAction>(mConnectionManager, context, mClient);
     mActions.emplace(context, impl);
     return impl;
   }
