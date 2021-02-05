@@ -23,7 +23,7 @@ Installation and demo video: https://youtu.be/MSMbRtj2fFA
 
 1. Double-check *everything* exactly matches. `https://localhost/` is not the same as `https://localhost`, or
    `http://localhost/`
-2. If that does not resolve the problem, sign up/sign in to github, and click 'New discussion' on https://github.com/fredemmott/StreamDeck-Discord/discussions ; create an entry in the "Help" category
+2. If that does not resolve the problem, sign up/sign in to github, and click 'New discussion' on https://github.com/fredemmott/StreamDeck-Discord/discussions ; create an entry in the "Q & A" category
 
 I'm not able to offer 1:1 help, e.g. via Discord.
 
