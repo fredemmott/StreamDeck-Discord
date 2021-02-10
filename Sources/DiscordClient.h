@@ -66,7 +66,7 @@ class DiscordClient {
   CredentialsCallback mCredentialsCallback;
   std::string mAppId;
   std::string mAppSecret;
-  DiscordClientThread* mProcessingThread;
+  std::unique_ptr<DiscordClientThread> mProcessingThread;
 
   Credentials getOAuthCredentials(
     const std::string& grantType,

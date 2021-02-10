@@ -75,7 +75,7 @@ class DiscordStreamDeckPlugin : public ESDPlugin {
   Credentials mCredentials;
 
   std::shared_ptr<DiscordClient> mClient;
-  CallBackTimer* mTimer;
+  std::unique_ptr<CallBackTimer> mTimer;
   bool mHaveRequestedGlobalSettings;
 
   void ConnectToDiscord();

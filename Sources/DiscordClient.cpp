@@ -79,16 +79,13 @@ DiscordClient::DiscordClient(
 }
 
 DiscordClient::~DiscordClient() {
-  ESDDebug("destroying client");
-  delete mProcessingThread;
-  mProcessingThread = 0;
+  mProcessingThread.reset();
   RpcConnection::Destroy(mConnection);
 }
 
 void DiscordClient::initializeWithBackgroundThread() {
   initialize();
-  delete mProcessingThread;
-  mProcessingThread = new DiscordClientThread(this);
+  mProcessingThread = std::make_unique<DiscordClientThread>(this);
   mProcessingThread->start();
 }
 

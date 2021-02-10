@@ -44,12 +44,10 @@ static_assert(_HAS_CXX17, "C++17 feature flag not enabled");
 
 DiscordStreamDeckPlugin::DiscordStreamDeckPlugin() {
   mHaveRequestedGlobalSettings = false;
-  mClient = nullptr;
-  mTimer = new CallBackTimer();
+  mTimer = std::make_unique<CallBackTimer>();
 }
 
 DiscordStreamDeckPlugin::~DiscordStreamDeckPlugin() {
-  delete mTimer;
 }
 
 void DiscordStreamDeckPlugin::KeyUpForAction(
