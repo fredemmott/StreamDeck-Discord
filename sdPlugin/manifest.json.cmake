@@ -20,6 +20,9 @@
       "States": [
         {
           "Image": "discord-mic-off"
+        },
+        {
+          "Image": "discord-mic-off"
         }
       ],
       "SupportedInMultiActions": true,
@@ -30,6 +33,9 @@
     {
       "Icon": "discord-mic-on",
       "States": [
+        {
+          "Image": "discord-mic-on"
+        },
         {
           "Image": "discord-mic-on"
         }
@@ -59,6 +65,9 @@
       "States": [
         {
           "Image": "discord-deafen-on"
+        },
+        {
+          "Image": "discord-deafen-on"
         }
       ],
       "SupportedInMultiActions": true,
@@ -69,6 +78,9 @@
     {
       "Icon": "discord-deafen-off",
       "States": [
+        {
+          "Image": "discord-deafen-off"
+        },
         {
           "Image": "discord-deafen-off"
         }
