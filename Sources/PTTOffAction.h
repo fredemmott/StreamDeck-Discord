@@ -13,6 +13,6 @@ class PTTOffAction final : public DiscordESDAction {
   }
 
   virtual int GetDesiredState(const DiscordClient::State& state) override {
-      return state.isPTT ? 0 : 1;
+      return state.isPTT ? 1 : 0;
   }
 };
