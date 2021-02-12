@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         os: [windows, macos]
-        build-type: [Release, Debug]
+        build-type: [RelWithDebInfo, Debug]
   streamDeckPlugin:
     name: ${{matrix.build-type}} .streamDeckPlugin
     needs: build
@@ -71,6 +71,12 @@ jobs:
           install -m755 \
             artifacts/sddiscord-Windows-${{matrix.build-type}}/sddiscord.exe \
             com.fredemmott.discord.sdPlugin/sddiscord.exe
+          PDB_SOURCE="artifacts/sddiscord-Windows-${{matrix.build-type}}/sddiscord.pdb"
+          if [ -e "${PDB_SOURCE}" ]; then
+            install -m755 \
+              artifacts/sddiscord-Windows-${{matrix.build-type}}/sddiscord.pdb\
+              com.fredemmott.discord.sdPlugin/sddiscord.pdb
+          fi
       - name: Checkout DistributionTool
         uses: actions/checkout@v2
         with:
@@ -95,7 +101,7 @@ jobs:
           path: com.fredemmott.discord.streamDeckPlugin
     strategy:
       matrix:
-        build-type: [Release, Debug]
+        build-type: [RelWithDebInfo, Debug]
   release:
     name: Publish Release
     if: startsWith(github.ref, 'refs/tags/v')
@@ -123,7 +129,7 @@ jobs:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create-release.outputs.upload_url }}
-        asset_path: ${{runner.temp}}/artifacts/Release-StreamDeckPlugin/com.fredemmott.discord.streamDeckPlugin
+        asset_path: ${{runner.temp}}/artifacts/RelWithDebInfo-StreamDeckPlugin/com.fredemmott.discord.streamDeckPlugin
         asset_name: com.fredemmott.discord.streamDeckPlugin
         asset_content_type: application/octet-stream
     - name: Attach Debug Build
