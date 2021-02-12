@@ -1,8 +1,8 @@
 #include "DiscordClient.h"
 
-#include <StreamDeckSDK/ESDLogger.h>
-#include <StreamDeckSDK/EPLJSONUtils.h>
 #include <DiscordRPCSDK/rpc_connection.h>
+#include <StreamDeckSDK/EPLJSONUtils.h>
+#include <StreamDeckSDK/ESDLogger.h>
 
 #include <atomic>
 #include <chrono>
@@ -126,20 +126,20 @@ bool DiscordClient::processInitializationEvents() {
     return true;
   }
 
-
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
-    mConnection->Write({{"nonce", getNextNonce()},
-                        {"cmd", "AUTHORIZE"},
-                        {"args",
-                         {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
+    mConnection->Write(
+      {{"nonce", getNextNonce()},
+       {"cmd", "AUTHORIZE"},
+       {"args", {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
     return true;
   }
 
   setRpcState(RpcState::CONNECTING, RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
-  mConnection->Write({{"nonce", getNextNonce()},
-                      {"cmd", "AUTHENTICATE"},
-                      {"args", {{"access_token", mCredentials.accessToken}}}});
+  mConnection->Write(
+    {{"nonce", getNextNonce()},
+     {"cmd", "AUTHENTICATE"},
+     {"args", {{"access_token", mCredentials.accessToken}}}});
   return true;
 }
 
@@ -147,9 +147,10 @@ void DiscordClient::startAuthenticationWithNewAccessToken() {
   setRpcState(
     RpcState::REQUESTING_ACCESS_TOKEN,
     RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
-  mConnection->Write({{"nonce", getNextNonce()},
-                      {"cmd", "AUTHENTICATE"},
-                      {"args", {"access_token", mCredentials.accessToken}}});
+  mConnection->Write(
+    {{"nonce", getNextNonce()},
+     {"cmd", "AUTHENTICATE"},
+     {"args", {"access_token", mCredentials.accessToken}}});
 }
 
 bool DiscordClient::processEvents() {
@@ -201,11 +202,13 @@ bool DiscordClient::processEvents() {
         "refresh_token", "refresh_token", mCredentials.refreshToken);
       mCredentialsCallback(mCredentials);
       if (mCredentials.accessToken.empty()) {
-        setRpcState(RpcState::REQUESTING_ACCESS_TOKEN, RpcState::REQUESTING_USER_PERMISSION);
-        mConnection->Write({{"nonce", getNextNonce()},
-                        {"cmd", "AUTHORIZE"},
-                        {"args",
-                         {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
+        setRpcState(
+          RpcState::REQUESTING_ACCESS_TOKEN,
+          RpcState::REQUESTING_USER_PERMISSION);
+        mConnection->Write(
+          {{"nonce", getNextNonce()},
+           {"cmd", "AUTHORIZE"},
+           {"args", {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
         return true;
       }
       startAuthenticationWithNewAccessToken();
@@ -214,9 +217,10 @@ bool DiscordClient::processEvents() {
     setRpcState(
       RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN,
       RpcState::REQUESTING_VOICE_STATE);
-    mConnection->Write({{"nonce", getNextNonce()},
-                        {"cmd", "SUBSCRIBE"},
-                        {"evt", "VOICE_SETTINGS_UPDATE"}});
+    mConnection->Write(
+      {{"nonce", getNextNonce()},
+       {"cmd", "SUBSCRIBE"},
+       {"evt", "VOICE_SETTINGS_UPDATE"}});
     mConnection->Write({
       {"nonce", getNextNonce()},
       {"cmd", "GET_VOICE_SETTINGS"},
@@ -228,18 +232,14 @@ bool DiscordClient::processEvents() {
     if (haveData) {
       mState.isMuted = EPLJSONUtils::GetBoolByName(data, "mute");
       mState.isDeafened = EPLJSONUtils::GetBoolByName(data, "deaf");
-      
+
       json mode;
       const bool haveMode = EPLJSONUtils::GetObjectByName(data, "mode", mode);
-      if (haveMode)
-      {
+      if (haveMode) {
         const auto type = EPLJSONUtils::GetStringByName(mode, "type");
-        if (type == "PUSH_TO_TALK")
-        {
+        if (type == "PUSH_TO_TALK") {
           mState.isPTT = true;
-        }
-        else if (type == "VOICE_ACTIVITY")
-        {
+        } else if (type == "VOICE_ACTIVITY") {
           mState.isPTT = false;
         }
       }
