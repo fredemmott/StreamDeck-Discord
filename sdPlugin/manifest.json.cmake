@@ -11,7 +11,7 @@
         }
       ],
       "SupportedInMultiActions": false,
-      "Name": "Toggle Discord Mute",
+      "Name": "Toggle Self-Mute",
       "Tooltip": "Toggle Self-Mute in Discord",
       "UUID": "com.fredemmott.discord.mute"
     },
@@ -23,7 +23,7 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Discord Mute On",
+      "Name": "Self-Mute On",
       "Tooltip": "Set Self-Mute in Discord to On",
       "UUID": "com.fredemmott.discord.muteon"
     },
@@ -35,7 +35,7 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Discord Mute Off",
+      "Name": "Self-Mute Off",
       "Tooltip": "Set Self-Mute in Discord to Off",
       "UUID": "com.fredemmott.discord.muteoff"
     },
@@ -50,8 +50,8 @@
         }
       ],
       "SupportedInMultiActions": false,
-      "Name": "Toggle Discord Deafen",
-      "Tooltip": "Toggle Deafen in Discord",
+      "Name": "Toggle Self-Deafen",
+      "Tooltip": "Toggle Self-Deafen in Discord",
       "UUID": "com.fredemmott.discord.deafen"
     },
     {
@@ -62,7 +62,7 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Set Discord Deafen On",
+      "Name": "Self-Deafen On",
       "Tooltip": "Set Deafen in Discord to On",
       "UUID": "com.fredemmott.discord.deafenon"
     },
@@ -74,9 +74,24 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Set Discord Deafen Off",
+      "Name": "Self-Deafen Off",
       "Tooltip": "Set Deafen in Discord to Off",
       "UUID": "com.fredemmott.discord.deafenoff"
+    },
+    {
+      "Icon": "discord-ptt",
+      "States": [
+        {
+          "Image": "discord-va"
+        },
+        {
+          "Image": "discord-ptt"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Name": "Toggle PTT and VA Modes",
+      "Tooltip": "Toggle Discord between Push-to-Talk and Voice-Activated",
+      "UUID": "com.fredemmott.discord.ptt"
     },
     {
       "Icon": "discord-va",
@@ -89,7 +104,7 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Set Discord to Voice-Activated",
+      "Name": "Voice-Activated Mode",
       "Tooltip": "Set Push-To-Talk off",
       "UUID": "com.fredemmott.discord.pttoff"
     },
@@ -104,32 +119,17 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Set Discord to Push-To-Talk",
+      "Name": "Push-To-Talk Mode",
       "Tooltip": "Set Voice-Activated off)",
       "UUID": "com.fredemmott.discord.ptton"
-    },
-    {
-      "Icon": "discord-ptt",
-      "States": [
-        {
-          "Image": "discord-va"
-        },
-        {
-          "Image": "discord-ptt"
-        }
-      ],
-      "SupportedInMultiActions": false,
-      "Name": "Toggle Discord Push-To-Talk",
-      "Tooltip": "Toggle Discord between Push-to-Talk and Voice-Activated",
-      "UUID": "com.fredemmott.discord.ptt"
     }
   ],
   "Author": "Fred Emmott",
   "CodePathMac": "sddiscord",
   "CodePathWin": "sddiscord.exe",
   "PropertyInspectorPath": "propertyinspector/index.html",
-  "Description": "Toggle Discord Mute and Deafen.",
-  "Name": "Discord Mute/Deafen",
+  "Description": "Discord Self-Mute/Deafen and PTT/VA",
+  "Name": "Discord Self-Mute/Deafen and PTT/VA",
   "Category": "Discord",
   "Icon": "discord-mic-off",
   "Version": "${CMAKE_PROJECT_VERSION}",
