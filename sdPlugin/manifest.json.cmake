@@ -6,12 +6,12 @@
         {
           "Image": "discord-mic-on"
         },
-		{
-		  "Image": "discord-mic-off"
-		}
+        {
+          "Image": "discord-mic-off"
+        }
       ],
       "SupportedInMultiActions": false,
-	    "Name": "Toggle Discord Mute",
+      "Name": "Toggle Discord Mute",
       "Tooltip": "Toggle Self-Mute in Discord",
       "UUID": "com.fredemmott.discord.mute"
     },
@@ -39,18 +39,18 @@
       "Tooltip": "Set Self-Mute in Discord to Off",
       "UUID": "com.fredemmott.discord.muteoff"
     },
-	{
+    {
       "Icon": "discord-deafen-off",
       "States": [
         {
           "Image": "discord-deafen-off"
         },
-		{
-		  "Image": "discord-deafen-on"
-		}
+        {
+          "Image": "discord-deafen-on"
+        }
       ],
       "SupportedInMultiActions": false,
-	    "Name": "Toggle Discord Deafen",
+      "Name": "Toggle Discord Deafen",
       "Tooltip": "Toggle Deafen in Discord",
       "UUID": "com.fredemmott.discord.deafen"
     },
@@ -79,42 +79,48 @@
       "UUID": "com.fredemmott.discord.deafenoff"
     },
     {
-      "Icon": "discord-deafen-off",
+      "Icon": "discord-va",
       "States": [
         {
-          "Image": "discord-deafen-off"
+          "Image": "discord-va"
+        },
+        {
+          "Image": "discord-va"
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Set Discord PTT OFF",
-      "Tooltip": "Set PTT in Discord to Off",
+      "Name": "Set Discord to Voice-Activated",
+      "Tooltip": "Set Push-To-Talk off",
       "UUID": "com.fredemmott.discord.pttoff"
     },
     {
-      "Icon": "discord-deafen-on",
+      "Icon": "discord-ptt",
       "States": [
         {
-          "Image": "discord-deafen-on"
+          "Image": "discord-ptt"
+        },
+        {
+          "Image": "discord-ptt"
         }
       ],
       "SupportedInMultiActions": true,
-      "Name": "Set Discord PTT ON",
-      "Tooltip": "Set PTT in Discord to ON",
+      "Name": "Set Discord to Push-To-Talk",
+      "Tooltip": "Set Voice-Activated off)",
       "UUID": "com.fredemmott.discord.ptton"
     },
     {
-      "Icon": "discord-deafen-off",
+      "Icon": "discord-ptt",
       "States": [
         {
-          "Image": "discord-deafen-off"
+          "Image": "discord-va"
         },
-		{
-		  "Image": "discord-deafen-on"
-		}
+        {
+          "Image": "discord-ptt"
+        }
       ],
       "SupportedInMultiActions": false,
-	    "Name": "Toggle Discord PTT",
-      "Tooltip": "Toggle PTT in Discord",
+      "Name": "Toggle Discord Push-To-Talk",
+      "Tooltip": "Toggle Discord between Push-to-Talk and Voice-Activated",
       "UUID": "com.fredemmott.discord.ptt"
     }
   ],
