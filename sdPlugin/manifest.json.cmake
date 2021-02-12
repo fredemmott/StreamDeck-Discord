@@ -131,6 +131,7 @@
   "Description": "Discord Self-Mute/Deafen and PTT/VA",
   "Name": "Discord Self-Mute/Deafen and PTT/VA",
   "Category": "Discord",
+  "CategoryIcon": "category",
   "Icon": "discord-mic-off",
   "Version": "${CMAKE_PROJECT_VERSION}",
   "URL": "https://github.com/fredemmott/streamdeck-discord",
