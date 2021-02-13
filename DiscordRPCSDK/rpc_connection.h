@@ -44,7 +44,6 @@ struct RpcConnection {
         Connected,
     };
 
-    std::unique_ptr<BaseConnection> connection{nullptr};
     State state{State::Disconnected};
 	std::function<void(const json&)> onConnect = [](const json& message) {};
 	std::function<void(int, const std::string&)> onDisconnect = [](int code, const std::string& message) {};
@@ -66,4 +65,5 @@ private:
     bool Read(MessageFrame& message);
 	bool Write(const MessageFrame& message);
     bool Write(const void* data, size_t length);
+    std::unique_ptr<BaseConnection> connection{nullptr};
 };
