@@ -6,8 +6,9 @@
 #include <algorithm>
 #include <atomic>
 
-static const int RpcVersion = 1;
-static RpcConnection Instance;
+namespace {
+  static const int RpcVersion = 1;
+}
 
 #ifdef __APPLE__
 namespace {
@@ -21,17 +22,11 @@ void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
 }// namespace
 #endif
 
-/*static*/ RpcConnection* RpcConnection::Create(
-  const std::string& applicationId) {
-  Instance.connection = std::make_unique<BaseConnection>();
-  Instance.appId = applicationId;
-  return &Instance;
+RpcConnection::RpcConnection(
+  const std::string& applicationId): appId(applicationId) {
 }
 
-/*static*/ void RpcConnection::Destroy(RpcConnection*& c) {
-  c->Close();
-  c->connection.reset();
-  c = nullptr;
+RpcConnection::~RpcConnection() {
 }
 
 void RpcConnection::Open() {

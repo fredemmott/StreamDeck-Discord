@@ -52,8 +52,8 @@ struct RpcConnection {
 	std::string lastErrorMessage;
     RpcConnection::MessageFrame sendFrame;
 
-    static RpcConnection* Create(const std::string& applicationId);
-    static void Destroy(RpcConnection*&);
+    RpcConnection(const std::string& applicationId);
+    ~RpcConnection();
 
     inline bool IsOpen() const { return state == State::Connected; }
 
