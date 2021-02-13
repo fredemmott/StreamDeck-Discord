@@ -23,16 +23,14 @@ void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
 
 /*static*/ RpcConnection* RpcConnection::Create(
   const std::string& applicationId) {
-  Instance.connection = BaseConnection::Create();
+  Instance.connection = std::make_unique<BaseConnection>();
   Instance.appId = applicationId;
   return &Instance;
 }
 
 /*static*/ void RpcConnection::Destroy(RpcConnection*& c) {
   c->Close();
-  if (c->connection) {
-    BaseConnection::Destroy(c->connection);
-  }
+  c->connection.reset();
   c = nullptr;
 }
 
