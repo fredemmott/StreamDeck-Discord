@@ -7,11 +7,6 @@
 #include <assert.h>
 #include <windows.h>
 
-int GetProcessId()
-{
-    return (int)::GetCurrentProcessId();
-}
-
 struct BaseConnectionWin : public BaseConnection {
     HANDLE pipe{INVALID_HANDLE_VALUE};
 };
