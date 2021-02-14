@@ -9,15 +9,12 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-struct BaseConnection::Impl {
-    int sock{-1};
-};
+using asiosock = asio::local::stream_protocol::socket;
 
-#ifdef MSG_NOSIGNAL
-static int MsgFlags = MSG_NOSIGNAL;
-#else
-static int MsgFlags = 0;
-#endif
+struct BaseConnection::Impl {
+    std::shared_ptr<asio::io_context> asioctx;
+    std::unique_ptr<asiosock> asiosock;
+};
 
 static const char* GetTempPath()
 {
@@ -29,7 +26,8 @@ static const char* GetTempPath()
     return temp;
 }
 
-BaseConnection::BaseConnection(const std::shared_ptr<asio::io_context>&) : p(new BaseConnection::Impl) {}
+BaseConnection::BaseConnection(const std::shared_ptr<asio::io_context>& asioctx) : p(new BaseConnection::Impl { .asioctx = asioctx }) {
+}
 
 BaseConnection::~BaseConnection()
 {
@@ -38,25 +36,14 @@ BaseConnection::~BaseConnection()
 
 bool BaseConnection::Open()
 {
-    assert(this->p);
     const char* tempPath = GetTempPath();
-    this->p->sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (this->p->sock == -1) {
-        return false;
-    }
-    fcntl(this->p->sock, F_SETFL, O_NONBLOCK);
-#ifdef SO_NOSIGPIPE
-    int optval = 1;
-    setsockopt(this->p->sock, SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof(optval));
-#endif
-
-    static sockaddr_un PipeAddr {};
-    PipeAddr.sun_family = AF_UNIX;
+    this->p->asiosock = std::make_unique<asiosock>(*this->p->asioctx);
+    char sun_path[2048];
+    asio::error_code ec;
     for (int pipeNum = 0; pipeNum < 10; ++pipeNum) {
-        snprintf(
-          PipeAddr.sun_path, sizeof(PipeAddr.sun_path), "%s/discord-ipc-%d", tempPath, pipeNum);
-        int err = connect(this->p->sock, (const sockaddr*)&PipeAddr, sizeof(PipeAddr));
-        if (err == 0) {
+        snprintf(sun_path, sizeof(sun_path), "%s/discord-ipc-%d", tempPath, pipeNum);
+        this->p->asiosock->connect(sun_path, ec);
+        if (!ec) {
             this->isOpen = true;
             return true;
         }
@@ -67,22 +54,22 @@ bool BaseConnection::Open()
 
 bool BaseConnection::Close()
 {
-    if (this->p->sock == -1) {
+    if (!this->p->asiosock) {
         return false;
     }
-    close(this->p->sock);
-    this->p->sock = -1;
+    this->p->asiosock->close();
+    this->p->asiosock.reset();
     this->isOpen = false;
     return true;
 }
 
 bool BaseConnection::Write(const void* data, size_t length)
 {
-    if (this->p->sock == -1) {
+    if (!this->p->asiosock) {
         return false;
     }
 
-    ssize_t sentBytes = send(this->p->sock, data, length, MsgFlags);
+    ssize_t sentBytes = this->p->asiosock->write_some(asio::buffer(data, length));
     if (sentBytes < 0) {
         Close();
     }
@@ -91,13 +78,14 @@ bool BaseConnection::Write(const void* data, size_t length)
 
 bool BaseConnection::Read(void* data, size_t length)
 {
-    if (this->p->sock == -1) {
+    if (!this->p->asiosock) {
         return false;
     }
 
-    int res = (int)recv(this->p->sock, data, length, MsgFlags);
-    if (res < 0) {
-        if (errno == EAGAIN) {
+    asio::error_code ec;
+    int res = this->p->asiosock->receive(asio::buffer(data, length), 0, ec);
+    if (ec) {
+        if (ec == asio::error::try_again) {
             return false;
         }
         Close();
