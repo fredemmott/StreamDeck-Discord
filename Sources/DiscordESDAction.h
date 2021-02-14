@@ -9,9 +9,9 @@
 
 #include "DiscordClient.h"
 
-class DiscordESDActionV2 : public ESDAction {
+class DiscordESDAction : public ESDAction {
  public:
-  DiscordESDActionV2(
+  DiscordESDAction(
     ESDConnectionManager* esd,
     const std::string& context,
     std::shared_ptr<DiscordClient> client);

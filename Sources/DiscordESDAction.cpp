@@ -4,12 +4,12 @@
  * LICENSE file.
  */
 
-#include "DiscordESDActionV2.h"
+#include "DiscordESDAction.h"
 
 #include <StreamDeckSDK/ESDConnectionManager.h>
 #include <StreamDeckSDK/ESDLogger.h>
 
-DiscordESDActionV2::DiscordESDActionV2(
+DiscordESDAction::DiscordESDAction(
   ESDConnectionManager* esd,
   const std::string& context,
   std::shared_ptr<DiscordClient> discordClient)
@@ -17,7 +17,7 @@ DiscordESDActionV2::DiscordESDActionV2(
     SetDiscordClient(discordClient);
 }
 
-void DiscordESDActionV2::WillAppear(const nlohmann::json&) {
+void DiscordESDAction::WillAppear(const nlohmann::json&) {
   auto client = mDiscordClient.lock();
   if (!client) {
     GetESD()->ShowAlertForContext(GetContext());
@@ -27,7 +27,7 @@ void DiscordESDActionV2::WillAppear(const nlohmann::json&) {
   GetESD()->SetState(GetDesiredState(*client), GetContext());
 }
 
-void DiscordESDActionV2::KeyUp(const nlohmann::json&) {
+void DiscordESDAction::KeyUp(const nlohmann::json&) {
   auto client = mDiscordClient.lock();
   if (!client) {
     GetESD()->ShowAlertForContext(GetContext());
@@ -37,7 +37,7 @@ void DiscordESDActionV2::KeyUp(const nlohmann::json&) {
   KeyUp(*client);
 }
 
-void DiscordESDActionV2::SetDiscordClient(
+void DiscordESDAction::SetDiscordClient(
   const std::shared_ptr<DiscordClient>& client
 ) {
   mDiscordClient = client;

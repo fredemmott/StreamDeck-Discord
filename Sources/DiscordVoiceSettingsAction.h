@@ -1,10 +1,10 @@
 #pragma once
 
-#include "DiscordESDActionV2.h"
+#include "DiscordESDAction.h"
 
-class DiscordVoiceSettingsAction : public DiscordESDActionV2 {
+class DiscordVoiceSettingsAction : public DiscordESDAction {
  public:
-  using DiscordESDActionV2::DiscordESDActionV2;
+  using DiscordESDAction::DiscordESDAction;
 
  protected:
   virtual int GetDesiredState(

@@ -152,7 +152,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
     std::scoped_lock lock(mActionsMutex);
-    for (const auto& [ctx, action] : mV2Actions) {
+    for (const auto& [ctx, action] : mActions) {
       mConnectionManager->SendToPropertyInspector(
         action->GetActionID(), ctx, piPayload);
     }
@@ -176,7 +176,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
              {"state", DiscordClient::getRpcStateName(state.rpcState)}};
     {
       std::scoped_lock lock(mActionsMutex);
-      for (const auto& [ctx, action] : mV2Actions) {
+      for (const auto& [ctx, action] : mActions) {
         mConnectionManager->SendToPropertyInspector(
           action->GetActionID(), ctx, piPayload);
       }
@@ -184,7 +184,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY: {
         std::scoped_lock lock(mActionsMutex);
-        for (const auto& [_ctx, action] : mV2Actions) {
+        for (const auto& [_ctx, action] : mActions) {
           action->SetDiscordClient(mClient);
         }
       }
@@ -197,7 +197,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
         // fallthrough
       case DiscordClient::RpcState::AUTHENTICATION_FAILED: {
         std::scoped_lock lock(mActionsMutex);
-        for (const auto& [ctx, _action] : mV2Actions) {
+        for (const auto& [ctx, _action] : mActions) {
           mConnectionManager->ShowAlertForContext(ctx);
         }
         return;
@@ -209,7 +209,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     ESDDebug("Client ready");
     const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mActionsMutex);
-    for (const auto& [ctx, action] : mV2Actions) {
+    for (const auto& [ctx, action] : mActions) {
       action->SetDiscordClient(mClient);
       mConnectionManager->ShowOKForContext(ctx);
     }
@@ -281,71 +281,71 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   const std::string& action,
   const std::string& context) {
   std::scoped_lock lock(mActionsMutex);
-  auto itV2 = mV2Actions.find(context);
-  if (itV2 != mV2Actions.end()) {
-    return itV2->second;
+  auto it = mActions.find(context);
+  if (it != mActions.end()) {
+    return it->second;
   }
 
   if (action == SelfMuteToggleAction::ACTION_ID) {
     auto impl = std::make_shared<SelfMuteToggleAction>(
       mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == SelfMuteOnAction::ACTION_ID) {
     auto impl = std::make_shared<SelfMuteOnAction>(
       mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == SelfMuteOffAction::ACTION_ID) {
     auto impl = std::make_shared<SelfMuteOffAction>(
       mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == DeafenToggleAction::ACTION_ID) {
     auto impl = std::make_shared<DeafenToggleAction>(
       mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == DeafenOnAction::ACTION_ID) {
     auto impl
       = std::make_shared<DeafenOnAction>(mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == DeafenOffAction::ACTION_ID) {
     auto impl
       = std::make_shared<DeafenOffAction>(mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == PTTToggleAction::ACTION_ID) {
     auto impl = std::make_shared<PTTToggleAction>(
       mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == PTTOnAction::ACTION_ID) {
     auto impl
       = std::make_shared<PTTOnAction>(mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
   if (action == PTTOffAction::ACTION_ID) {
     auto impl
       = std::make_shared<PTTOffAction>(mConnectionManager, context, mClient);
-    mV2Actions.emplace(context, impl);
+    mActions.emplace(context, impl);
     return impl;
   }
 
