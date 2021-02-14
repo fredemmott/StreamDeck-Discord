@@ -55,6 +55,10 @@ class DiscordClientThread {
       ESDDebug("Waiting for message in background thread");
       auto success = co_await _client->mConnection->AsyncRead(&buf);
       ESDDebug("Read message? {}", (const char*) (success ? "true" : "false"));
+      if (!success) {
+        _client->mConnection->Close();
+        break;
+      }
       _client->processDiscordRPCMessage(buf);
       ESDDebug("Processed message!");
     }
@@ -82,6 +86,7 @@ DiscordClient::DiscordClient(
   const std::string& appId,
   const std::string& appSecret,
   const Credentials& credentials) {
+  ESDDebug("DiscordClient::DiscordClient()");
   mState.rpcState = RpcState::UNINITIALIZED;
   mIOContext = ctx;
   mAppId = appId;
@@ -94,6 +99,7 @@ DiscordClient::DiscordClient(
 }
 
 DiscordClient::~DiscordClient() {
+  ESDDebug("DiscordClient::~DiscordClient()");
   mRunning = false;
 }
 
@@ -121,6 +127,7 @@ void DiscordClient::initializeInCurrentThread() {
         auto success = co_await mConnection->AsyncRead(&msg);
         if (!success) {
           ESDDebug("Failed to read message");
+          mConnection->Close();
           break;
         }
         processDiscordRPCMessage(msg);
@@ -139,22 +146,26 @@ asio::awaitable<void> DiscordClient::initialize() {
 
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
   mConnection = std::make_unique<RpcConnection>(mIOContext, mAppId);
-  mConnection->onDisconnect = [=](int code, const std::string& message) {
-    ESDDebug("disconnected - {} {}", code, message.c_str());
-    switch (this->mState.rpcState) {
-      case RpcState::CONNECTING:
-        setRpcState(RpcState::CONNECTION_FAILED);
-        return;
-      case RpcState::CONNECTION_FAILED:
-      case RpcState::AUTHENTICATION_FAILED:
-        return;
-      default:
-        setRpcState(RpcState::DISCONNECTED);
-        return;
-    }
-  };
 
-  co_await mConnection->AsyncOpen();
+  if (!co_await mConnection->AsyncOpen()) {
+    setRpcState(RpcState::CONNECTING, RpcState::CONNECTION_FAILED);
+    co_return;
+  }
+
+	mConnection->onDisconnect = [=](int code, const std::string& message) {
+		ESDDebug("disconnected - {} {}", code, message.c_str());
+		switch (this->mState.rpcState) {
+			case RpcState::CONNECTING:
+				setRpcState(RpcState::CONNECTION_FAILED);
+				return;
+			case RpcState::CONNECTION_FAILED:
+			case RpcState::AUTHENTICATION_FAILED:
+				return;
+			default:
+				setRpcState(RpcState::DISCONNECTED);
+				return;
+		}
+	};
 
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
@@ -221,6 +232,7 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   ESDDebug("Received message {}", message.dump());
   auto parsed = message.get<BaseMessage>();
   if (parsed.nonce.has_value()) {
+    // TODO: error handling
     const auto nonce = *parsed.nonce;
     ESDDebug("Nonce: {}", nonce);
     auto promise = mPromises.find(nonce);

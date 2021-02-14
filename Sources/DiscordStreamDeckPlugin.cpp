@@ -136,12 +136,18 @@ void DiscordStreamDeckPlugin::ReconnectToDiscord() {
 
 void DiscordStreamDeckPlugin::ConnectToDiscord() {
   ESDDebug("Connecting to discord");
+  if (mClient) {
+    auto state = mClient->getState();
+    if (state.rpcState == DiscordClient::RpcState::CONNECTING || state.rpcState == DiscordClient::RpcState::READY) {
+      ESDDebug("Already connected, aborting.");
+      return;
+    }
+  }
   Credentials creds = mCredentials;
 
   DiscordClient::Credentials credentials;
   credentials.accessToken = creds.oauthToken;
   credentials.refreshToken = creds.refreshToken;
-  mClient.reset();
   {
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
@@ -225,23 +231,21 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
 }
 
 void DiscordStreamDeckPlugin::ConnectToDiscordLater() {
-  ESDDebug("ConnectToDiscordLater, ignoring");
-  return;
-  /*
-  mConnectionManager->LogMessage("Will try to connect in 1 second...");
-
-  mTimer->start(1000, [=]() {
-    if (mClient) {
-      const auto state = mClient->getState().rpcState;
-      if (
-        state != DiscordClient::RpcState::CONNECTION_FAILED
-        && state != DiscordClient::RpcState::DISCONNECTED) {
+  ESDDebug("Will try to connect in 1 second...");
+  if (!mConnectLaterTimer) {
+    mConnectLaterTimer = std::make_unique<asio::steady_timer>(
+      *mConnectionManager->GetAsioContext()
+    );
+  }
+  mConnectLaterTimer->expires_after(std::chrono::seconds(1));
+  mConnectLaterTimer->async_wait(
+    [this](const asio::error_code& ec) {
+      if (ec) {
         return;
       }
+      ConnectToDiscord();
     }
-    ConnectToDiscord();
-  });
-  */
+  );
 }
 
 void DiscordStreamDeckPlugin::DeviceDidConnect(

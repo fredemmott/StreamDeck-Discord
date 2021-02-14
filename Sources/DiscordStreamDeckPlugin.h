@@ -78,4 +78,5 @@ class DiscordStreamDeckPlugin : public ESDPlugin {
 
   void ConnectToDiscord();
   void ConnectToDiscordLater();
+  std::unique_ptr<asio::steady_timer> mConnectLaterTimer;
 };
