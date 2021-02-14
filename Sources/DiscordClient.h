@@ -60,7 +60,7 @@ class DiscordClient {
   std::string getAppSecret() const;
 
  private:
-  RpcConnection* mConnection;
+  std::unique_ptr<RpcConnection> mConnection;
   State mState;
   Credentials mCredentials;
   StateCallback mReadyCallback;

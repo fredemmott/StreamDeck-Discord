@@ -66,7 +66,6 @@ DiscordClient::DiscordClient(
   const std::string& appId,
   const std::string& appSecret,
   const Credentials& credentials) {
-  mConnection = nullptr;
   mState.rpcState = RpcState::UNINITIALIZED;
   mAppId = appId;
   mAppSecret = appSecret;
@@ -75,12 +74,9 @@ DiscordClient::DiscordClient(
   mStateCallback = [](State) {};
   mReadyCallback = mStateCallback;
   mCredentialsCallback = [](Credentials) {};
-  mProcessingThread = nullptr;
 }
 
 DiscordClient::~DiscordClient() {
-  mProcessingThread.reset();
-  RpcConnection::Destroy(mConnection);
 }
 
 void DiscordClient::initializeWithBackgroundThread() {
@@ -96,7 +92,7 @@ void DiscordClient::initialize() {
   }
 
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
-  mConnection = RpcConnection::Create(mAppId);
+  mConnection = std::make_unique<RpcConnection>(mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
     ESDDebug("disconnected - {} {}", code, message.c_str());
     switch (this->mState.rpcState) {
