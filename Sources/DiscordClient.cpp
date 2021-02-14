@@ -11,6 +11,44 @@
 
 using namespace DiscordPayloads;
 
+namespace {
+
+template<class T>
+class PubSubDataImpl : public PubSubData<T> {
+  public:
+    typedef typename PubSubDataImpl<T>::Subscriber Subscriber;
+
+    virtual void subscribe(Subscriber sub) override {
+      mSubscribers.push_back(std::move(sub));
+    }
+
+    virtual operator bool() const override {
+      return mData.has_value();
+    }
+
+    virtual const T* const operator->() const override {
+      return &mData.value();
+    }
+
+    void set(const T& data) {
+      mData = data;
+      ESDDebug("PubSub data {}", nlohmann::json(data).dump());
+      for (const auto& subscriber : mSubscribers) {
+        subscriber(data);
+      }
+    }
+  private:
+    std::vector<typename Subscriber> mSubscribers;
+    std::optional<T> mData;
+};
+
+} // namespace
+
+class DiscordClient::VoiceSettingsImpl final : public PubSubDataImpl<DiscordPayloads::VoiceSettingsResponse> {};
+DiscordClient::VoiceSettings& DiscordClient::getVoiceSettings() const {
+  return *mVoiceSettings.get();
+}
+
 const char* DiscordClient::getRpcStateName(RpcState state) {
   switch (state) {
 #define X(y) \
@@ -176,6 +214,7 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   ESDDebug("Received message {}", message.dump());
   auto parsed = message.get<BaseMessage>();
   if (parsed.nonce.has_value()) {
+    // Command response
     // TODO: error handling
     const auto nonce = *parsed.nonce;
     ESDDebug("Nonce: {}", nonce);
@@ -190,8 +229,20 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   }
 
   const auto command = parsed.cmd;
-  const auto event = parsed.evt;
   const auto data = parsed.data;
+
+  if (command == "DISPATCH") {
+    const auto event = *parsed.evt;
+    if (mSubscriptions.contains(event)) {
+      for (const auto& sub : mSubscriptions.at(event)) {
+        sub(data);
+      }
+    }
+    // not exiting, may have hard-coded impl below
+  }
+
+  const auto event = parsed.evt;
+
   if (command == "AUTHORIZE") {
     const auto code = data->value("code", "");
     if (code.empty() || event == "ERROR") {
@@ -243,10 +294,8 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
     setRpcState(
       RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN,
       RpcState::REQUESTING_VOICE_STATE);
-    mConnection->Write(
-      {{"nonce", getNextNonce()},
-       {"cmd", "SUBSCRIBE"},
-       {"evt", "VOICE_SETTINGS_UPDATE"}});
+    subscribeImpl("VOICE_SETTINGS_UPDATE", mVoiceSettings);
+
     mConnection->Write({
       {"nonce", getNextNonce()},
       {"cmd", "GET_VOICE_SETTINGS"},
@@ -367,4 +416,25 @@ asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArg
   mConnection->Write(request.dump());
   const auto json_response = co_await p.async_wait();
   co_return json_response;
+}
+
+template<typename TPubSub>
+void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& target) {
+  if (!target) {
+    target = std::make_unique<TPubSub>();
+  }
+
+  mSubscriptions[event].push_back(
+    [&target](const nlohmann::json& data) {
+      target->set(data);
+    }
+  );
+  nlohmann::json sub {
+    { "nonce", getNextNonce() },
+    { "cmd", "SUBSCRIBE" },
+    { "evt", event }
+  };
+  ESDDebug("Sending sub {}", sub.dump());
+  mConnection->Write(sub);
+  ESDDebug("Sent sub");
 }

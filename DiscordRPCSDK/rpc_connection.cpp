@@ -107,6 +107,7 @@ void RpcConnection::Close() {
 
 void RpcConnection::Write(const json& message) {
   const auto json = message.dump();
+  ESDDebug("Writing raw {}", json);
   Write(json.c_str(), json.length());
 }
 

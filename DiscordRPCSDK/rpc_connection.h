@@ -59,7 +59,12 @@ struct RpcConnection {
 
     asio::awaitable<bool> AsyncOpen();
     void Close();
+
 	void Write(const json& message);
+    // Ban implicit conversions; if you hit this, you're likely calling Write(json.dump()) instead of Write(json)
+    template<typename T>
+    void Write(T) = delete;
+
 	asio::awaitable<bool> AsyncRead(json* message);
 private:
     asio::awaitable<bool> AsyncRead(MessageFrame& message);

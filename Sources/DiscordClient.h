@@ -37,6 +37,21 @@ namespace DiscordPayloads {
   );
 }
 
+template<class T>
+class PubSubData {
+  public:
+    PubSubData() {};
+    virtual ~PubSubData() {};
+    PubSubData(const PubSubData&) = delete;
+    void operator=(const PubSubData&) = delete;
+
+    typedef std::function<void(const T&)> Subscriber;
+
+    virtual const T* const operator->() const = 0;
+    virtual operator bool() const = 0;
+    virtual void subscribe(Subscriber) = 0;
+};
+
 class DiscordClient {
  public:
 #define DISCORD_CLIENT_RPCSTATES \
@@ -87,7 +102,15 @@ class DiscordClient {
   std::string getAppId() const;
   std::string getAppSecret() const;
 
+  typedef PubSubData<DiscordPayloads::VoiceSettingsResponse> VoiceSettings;
+  VoiceSettings& getVoiceSettings() const;
+
  private:
+  asio::awaitable<void> initialize();
+
+  class VoiceSettingsImpl;
+  std::unique_ptr<VoiceSettingsImpl> mVoiceSettings;
+
   std::unique_ptr<RpcConnection> mConnection;
   State mState;
   Credentials mCredentials;
@@ -96,7 +119,6 @@ class DiscordClient {
   CredentialsCallback mCredentialsCallback;
   std::string mAppId;
   std::string mAppSecret;
-  asio::awaitable<void> initialize();
   std::future<void> mWorker;
   std::shared_ptr<asio::io_context> mIOContext;
 
@@ -112,7 +134,10 @@ class DiscordClient {
 
   std::shared_ptr<bool> mRunning;
   std::map<std::string, AwaitablePromise<nlohmann::json>> mPromises;
+  std::map<std::string, std::vector<std::function<void(const nlohmann::json&)>>> mSubscriptions;
 
   template<typename TRet, typename TArgs>
   asio::awaitable<TRet> commandImpl(const char* command, const TArgs& args);
+  template<typename TPubSub>
+  void subscribeImpl(const char* event, std::unique_ptr<TPubSub>&);
 };
