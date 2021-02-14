@@ -362,7 +362,7 @@ asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArg
     { "nonce", nonce },
     { "args", nlohmann::json(args) }
   };
-  AwaitablePromise<nlohmann::json> p(mIOContext);
+  AwaitablePromise<nlohmann::json> p(*mIOContext);
   mPromises.emplace(nonce, p);
   mConnection->Write(request.dump());
   const auto json_response = co_await p.async_wait();
