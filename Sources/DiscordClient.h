@@ -9,7 +9,6 @@
 #include <string>
 #include <map>
 
-class DiscordClientThread;
 class RpcConnection;
 
 namespace DiscordPayloads {
@@ -39,7 +38,6 @@ namespace DiscordPayloads {
 }
 
 class DiscordClient {
-  friend class DiscordClientThread;
  public:
 #define DISCORD_CLIENT_RPCSTATES \
   X(UNINITIALIZED) X(CONNECTING) X(REQUESTING_USER_PERMISSION) \
@@ -84,9 +82,7 @@ class DiscordClient {
   void setIsPTT(bool);
 
   // Easy mode...
-  void initializeWithBackgroundThread();
   void initializeInCurrentThread();
-  asio::awaitable<void> initialize();
 
   std::string getAppId() const;
   std::string getAppSecret() const;
@@ -100,7 +96,7 @@ class DiscordClient {
   CredentialsCallback mCredentialsCallback;
   std::string mAppId;
   std::string mAppSecret;
-  std::unique_ptr<DiscordClientThread> mProcessingThread;
+  asio::awaitable<void> initialize();
   std::shared_ptr<asio::io_context> mIOContext;
 
   Credentials getOAuthCredentials(

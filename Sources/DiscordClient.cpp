@@ -11,64 +11,6 @@
 
 using namespace DiscordPayloads;
 
-class DiscordClientThread {
- public:
-  DiscordClientThread(DiscordClient* client) : _execute(false) {
-    _client = client;
-  }
-
-  ~DiscordClientThread() {
-    if (_execute.load(std::memory_order_acquire)) {
-      stop();
-    };
-  }
-
-  void stop() {
-    _execute.store(false, std::memory_order_release);
-    if (_thd.joinable())
-      _thd.join();
-  }
-
-  void start() {
-    if (_execute.load(std::memory_order_acquire)) {
-      stop();
-    };
-    _execute.store(true, std::memory_order_release);
-    _thd = std::thread([this]() {
-      auto f = asio::co_spawn(
-        *_client->mIOContext,
-        impl(),
-        asio::use_future
-      );
-      f.wait();
-    });
-  }
-
-  bool is_running() const noexcept {
-    return (_execute.load(std::memory_order_acquire) && _thd.joinable());
-  }
-
- private:
-  asio::awaitable<void> impl() {
-    while (_execute.load(std::memory_order_acquire)) {
-      nlohmann::json buf;
-      ESDDebug("Waiting for message in background thread");
-      auto success = co_await _client->mConnection->AsyncRead(&buf);
-      ESDDebug("Read message? {}", (const char*) (success ? "true" : "false"));
-      if (!success) {
-        _client->mConnection->Close();
-        break;
-      }
-      _client->processDiscordRPCMessage(buf);
-      ESDDebug("Processed message!");
-    }
-  }
-
-  std::atomic<bool> _execute;
-  std::thread _thd;
-  DiscordClient* _client;
-};
-
 const char* DiscordClient::getRpcStateName(RpcState state) {
   switch (state) {
 #define X(y) \
@@ -101,18 +43,6 @@ DiscordClient::DiscordClient(
 DiscordClient::~DiscordClient() {
   ESDDebug("DiscordClient::~DiscordClient()");
   mRunning = false;
-}
-
-void DiscordClient::initializeWithBackgroundThread() {
-  asio::co_spawn(
-    *mIOContext,
-    [this]() -> asio::awaitable<void> {
-      co_await initialize();
-      mProcessingThread = std::make_unique<DiscordClientThread>(this);
-      mProcessingThread->start();
-    },
-    asio::detached
-  );
 }
 
 void DiscordClient::initializeInCurrentThread() {
@@ -152,20 +82,20 @@ asio::awaitable<void> DiscordClient::initialize() {
     co_return;
   }
 
-	mConnection->onDisconnect = [=](int code, const std::string& message) {
-		ESDDebug("disconnected - {} {}", code, message.c_str());
-		switch (this->mState.rpcState) {
-			case RpcState::CONNECTING:
-				setRpcState(RpcState::CONNECTION_FAILED);
-				return;
-			case RpcState::CONNECTION_FAILED:
-			case RpcState::AUTHENTICATION_FAILED:
-				return;
-			default:
-				setRpcState(RpcState::DISCONNECTED);
-				return;
-		}
-	};
+  mConnection->onDisconnect = [=](int code, const std::string& message) {
+    ESDDebug("disconnected - {} {}", code, message.c_str());
+    switch (this->mState.rpcState) {
+      case RpcState::CONNECTING:
+        setRpcState(RpcState::CONNECTION_FAILED);
+        return;
+      case RpcState::CONNECTION_FAILED:
+      case RpcState::AUTHENTICATION_FAILED:
+        return;
+      default:
+        setRpcState(RpcState::DISCONNECTED);
+        return;
+    }
+  };
 
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
