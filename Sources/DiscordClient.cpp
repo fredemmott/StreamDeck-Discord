@@ -211,8 +211,10 @@ namespace {
   struct BaseMessage {
     std::string cmd;
     std::optional<std::string> nonce;
+    std::optional<std::string> evt;
+    std::optional<nlohmann::json> data;
   };
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BaseMessage, cmd, nonce);
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BaseMessage, cmd, nonce, evt, data);
 } // namespace
 
 bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
@@ -232,10 +234,8 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   }
 
   const auto command = parsed.cmd;
-  ESDDebug("Command: {}", command);
-  const auto event = EPLJSONUtils::GetStringByName(message, "evt");
-  json data;
-  const bool haveData = EPLJSONUtils::GetObjectByName(message, "data", data);
+  const auto event = parsed.evt;
+  const auto data = parsed.data;
   if (command == "AUTHORIZE") {
     const auto code = EPLJSONUtils::GetStringByName(data, "code");
     if (code.empty() || event == "error") {
@@ -299,12 +299,12 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   }
 
   if (command == "GET_VOICE_SETTINGS" || event == "VOICE_SETTINGS_UPDATE") {
-    if (haveData) {
+    if (data) {
       if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
         setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::READY);
       }
       ESDDebug("Have data");
-      const VoiceSettingsResponse response = data;
+      const auto response = data->get<VoiceSettingsResponse>();
       ESDDebug("Decoded");
       mState.isMuted = response.mute;
       mState.isDeafened = response.deaf;
