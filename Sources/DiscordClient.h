@@ -1,5 +1,7 @@
 #pragma once
 
+#include <asio.hpp>
+
 #include <functional>
 #include <string>
 
@@ -53,7 +55,7 @@ class DiscordClient {
   void initializeWithBackgroundThread();
 
   // ... or, call these
-  void initialize();
+  void initialize(const std::shared_ptr<asio::io_context>& ctx);
   bool processEvents();
 
   std::string getAppId() const;

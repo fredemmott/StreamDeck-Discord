@@ -1,13 +1,13 @@
 #pragma once
 
-#include "connection.h"
-
+#include <asio.hpp>
 #include <nlohmann/json.hpp>
 
 #include <functional>
 #include <string>
 
 using json = nlohmann::json;
+class BaseConnection;
 
 // I took this from the buffer size libuv uses for named pipes; I suspect ours would usually be much
 // smaller.
@@ -52,7 +52,7 @@ struct RpcConnection {
 	std::string lastErrorMessage;
     RpcConnection::MessageFrame sendFrame;
 
-    RpcConnection(const std::string& applicationId);
+    RpcConnection(const std::shared_ptr<asio::io_context>&, const std::string& applicationId);
     ~RpcConnection();
 
     inline bool IsOpen() const { return state == State::Connected; }

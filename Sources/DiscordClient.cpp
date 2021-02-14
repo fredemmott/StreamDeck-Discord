@@ -80,19 +80,20 @@ DiscordClient::~DiscordClient() {
 }
 
 void DiscordClient::initializeWithBackgroundThread() {
-  initialize();
+  auto ctx = std::make_shared<asio::io_context>();
+  initialize(ctx);
   mProcessingThread = std::make_unique<DiscordClientThread>(this);
   mProcessingThread->start();
 }
 
-void DiscordClient::initialize() {
+void DiscordClient::initialize(const std::shared_ptr<asio::io_context>& ctx) {
   if (mAppId.empty() || mAppSecret.empty()) {
     setRpcState(RpcState::UNINITIALIZED, RpcState::AUTHENTICATION_FAILED);
     return;
   }
 
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
-  mConnection = std::make_unique<RpcConnection>(mAppId);
+  mConnection = std::make_unique<RpcConnection>(ctx, mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
     ESDDebug("disconnected - {} {}", code, message.c_str());
     switch (this->mState.rpcState) {

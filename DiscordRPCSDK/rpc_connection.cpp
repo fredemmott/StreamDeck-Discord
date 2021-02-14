@@ -1,5 +1,7 @@
 #include "rpc_connection.h"
 
+#include "connection.h"
+
 #include "StreamDeckSDK/ESDLogger.h"
 #include "StreamDeckSDK/EPLJSONUtils.h"
 
@@ -23,7 +25,9 @@ void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
 #endif
 
 RpcConnection::RpcConnection(
-  const std::string& applicationId): appId(applicationId), connection(std::make_unique<BaseConnection>()) {
+  const std::shared_ptr<asio::io_context>& ctx,
+  const std::string& applicationId
+): appId(applicationId), connection(std::make_unique<BaseConnection>()) {
 }
 
 RpcConnection::~RpcConnection() {
