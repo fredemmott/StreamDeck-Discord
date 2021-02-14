@@ -1,11 +1,4 @@
-set(SOURCES rpc_connection.cpp)
-if (WIN32)
-  list(APPEND SOURCES connection_win.cpp)
-elseif (UNIX)
-  list(APPEND SOURCES connection_unix.cpp)
-else()
-  message(FATAL_ERROR "Unsupported platform")
-endif()
+set(SOURCES connection.cpp rpc_connection.cpp)
 
 add_library(
   DiscordRPCSDK
