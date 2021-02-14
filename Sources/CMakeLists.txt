@@ -1,7 +1,6 @@
 set(
   SOURCES
   DiscordClient.cpp
-  DiscordESDAction.cpp
   DiscordESDActionV2.cpp
   DiscordESDActionIDs.cpp
   DiscordVoiceSettingsAction.cpp

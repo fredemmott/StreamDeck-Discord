@@ -19,7 +19,6 @@ using json = nlohmann::json;
 #include <map>
 #include <mutex>
 
-#include "DiscordESDAction.h"
 #include "DiscordESDActionV2.h"
 
 class DiscordClient;
@@ -58,7 +57,6 @@ class DiscordStreamDeckPlugin : public ESDPlugin {
 
  private:
   std::mutex mActionsMutex;
-  std::map<std::string, std::shared_ptr<DiscordESDAction>> mActions;
   std::map<std::string, std::shared_ptr<DiscordESDActionV2>> mV2Actions;
 
   struct Credentials {

@@ -152,10 +152,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
     std::scoped_lock lock(mActionsMutex);
-    for (const auto& [ctx, action] : mActions) {
-      mConnectionManager->SendToPropertyInspector(
-        action->GetActionID(), ctx, piPayload);
-    }
     for (const auto& [ctx, action] : mV2Actions) {
       mConnectionManager->SendToPropertyInspector(
         action->GetActionID(), ctx, piPayload);
@@ -180,10 +176,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
              {"state", DiscordClient::getRpcStateName(state.rpcState)}};
     {
       std::scoped_lock lock(mActionsMutex);
-      for (const auto& [ctx, action] : mActions) {
-        mConnectionManager->SendToPropertyInspector(
-          action->GetActionID(), ctx, piPayload);
-      }
       for (const auto& [ctx, action] : mV2Actions) {
         mConnectionManager->SendToPropertyInspector(
           action->GetActionID(), ctx, piPayload);
@@ -192,9 +184,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY: {
         std::scoped_lock lock(mActionsMutex);
-        for (const auto& [_ctx, action] : mActions) {
-          action->DiscordStateDidChange(mClient, state);
-        }
         for (const auto& [_ctx, action] : mV2Actions) {
           action->SetDiscordClient(mClient);
         }
@@ -208,9 +197,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
         // fallthrough
       case DiscordClient::RpcState::AUTHENTICATION_FAILED: {
         std::scoped_lock lock(mActionsMutex);
-        for (const auto& [ctx, _action] : mActions) {
-          mConnectionManager->ShowAlertForContext(ctx);
-        }
         for (const auto& [ctx, _action] : mV2Actions) {
           mConnectionManager->ShowAlertForContext(ctx);
         }
@@ -223,10 +209,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     ESDDebug("Client ready");
     const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mActionsMutex);
-    for (const auto& [ctx, action] : mActions) {
-      action->DiscordStateDidChange(mClient, state);
-      mConnectionManager->ShowOKForContext(ctx);
-    }
     for (const auto& [ctx, action] : mV2Actions) {
       action->SetDiscordClient(mClient);
       mConnectionManager->ShowOKForContext(ctx);
@@ -299,10 +281,6 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   const std::string& action,
   const std::string& context) {
   std::scoped_lock lock(mActionsMutex);
-  auto it = mActions.find(context);
-  if (it != mActions.end()) {
-    return it->second;
-  }
   auto itV2 = mV2Actions.find(context);
   if (itV2 != mV2Actions.end()) {
     return itV2->second;
