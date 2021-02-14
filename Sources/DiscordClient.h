@@ -57,10 +57,7 @@ class DiscordClient {
   // Easy mode...
   void initializeWithBackgroundThread();
   void initializeInCurrentThread();
-
-  // ... or, call these
   asio::awaitable<void> initialize();
-  bool processDiscordRPCMessage(const nlohmann::json& message);
 
   std::string getAppId() const;
   std::string getAppSecret() const;
@@ -85,6 +82,7 @@ class DiscordClient {
   void setRpcState(RpcState oldState, RpcState newState);
   std::string getNextNonce();
   void startAuthenticationWithNewAccessToken();
+  bool processDiscordRPCMessage(const nlohmann::json& message);
 
   bool mRunning = false;
 };
