@@ -66,17 +66,18 @@ asio::awaitable<bool> RpcConnection::AsyncOpen() {
   {
     json message;
     MessageFrame frame;
-    ESDDebug("waiting for reply");
-    if (co_await AsyncRead(frame)) {
-      ESDDebug("got reply");
-      message = json::parse(frame.message);
-      auto cmd = message.value("cmd", "");
-      auto evt = message.value("evt", "");
-      if (cmd == "DISPATCH" && evt == "READY") {
-        state = State::Connected;
-        if (onConnect) {
-          onConnect(message);
-        }
+    if (!co_await AsyncRead(frame)) {
+      ESDDebug("Failed to read dispatch frame");
+      co_return false;
+    }
+
+    message = json::parse(frame.message);
+    auto cmd = message.value("cmd", "");
+    auto evt = message.value("evt", "");
+    if (cmd == "DISPATCH" && evt == "READY") {
+      state = State::Connected;
+      if (onConnect) {
+        onConnect(message);
       }
     }
     ESDDebug("connected");
