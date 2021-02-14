@@ -29,6 +29,7 @@ DiscordClient::DiscordClient(
   const std::string& appSecret,
   const Credentials& credentials) {
   ESDDebug("DiscordClient::DiscordClient()");
+  mRunning = std::make_shared<bool>(false);
   mState.rpcState = RpcState::UNINITIALIZED;
   mIOContext = ctx;
   mAppId = appId;
@@ -42,29 +43,42 @@ DiscordClient::DiscordClient(
 
 DiscordClient::~DiscordClient() {
   ESDDebug("DiscordClient::~DiscordClient()");
-  mRunning = false;
+  *mRunning = false;
+  if (mConnection) {
+    mConnection->Close();
+  }
+  if (mWorker.valid()) {
+    ESDDebug("Waiting for worker...");
+    while(mWorker.wait_for(std::chrono::seconds::zero()) != std::future_status::ready) {
+      ESDDebug("polling for worker...");
+      mIOContext->poll();
+    }
+    ESDDebug("Worker shut down.");
+  }
 }
 
 void DiscordClient::initializeInCurrentThread() {
-  asio::co_spawn(
+  assert(!mWorker.valid());
+  const auto running = mRunning;
+  *running = true;
+  mWorker = asio::co_spawn(
     *mIOContext,
-    [this]() -> asio::awaitable<void> {
+    [this, running]() -> asio::awaitable<void> {
       co_await initialize();
-      mRunning = true;
-      while(mRunning) {
+      while(*running) {
         nlohmann::json msg;
-        ESDDebug("Waiting for message in main thread");
         auto success = co_await mConnection->AsyncRead(&msg);
         if (!success) {
-          ESDDebug("Failed to read message");
+          ESDDebug("Failed to read message, closing connection");
           mConnection->Close();
           break;
         }
         processDiscordRPCMessage(msg);
         ESDDebug("Processed message");
       }
+      ESDDebug("Worker loop stopped");
     },
-    asio::detached
+    asio::use_future
   );
 }
 
@@ -245,15 +259,12 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
       if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
         setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::READY);
       }
-      ESDDebug("Have data");
       const auto response = data->get<VoiceSettingsResponse>();
-      ESDDebug("Decoded");
       mState.isMuted = response.mute;
       mState.isDeafened = response.deaf;
 
       json mode;
       const bool haveMode = EPLJSONUtils::GetObjectByName(data, "mode", mode);
-      ESDDebug("have mode? {}", haveMode);
       if (haveMode) {
         const auto type = EPLJSONUtils::GetStringByName(mode, "type");
         if (type == "PUSH_TO_TALK") {
@@ -265,7 +276,6 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
       if (mStateCallback) {
         mStateCallback(mState);
       }
-      ESDDebug("All done");
     }
     return true;
   }

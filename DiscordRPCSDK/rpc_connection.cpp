@@ -33,13 +33,16 @@ RpcConnection::~RpcConnection() {
 }
 
 asio::awaitable<bool> RpcConnection::AsyncOpen() {
+  ESDDebug("Opening - state: {}", state);
   if (state != State::Disconnected) {
     co_return false;
   }
 
   if (!connection->Open()) {
+    ESDDebug("Failed to open base connection");
     co_return false;
   }
+  ESDDebug("Opened base connection");
 
   {
     json message;
@@ -58,10 +61,14 @@ asio::awaitable<bool> RpcConnection::AsyncOpen() {
     }
   }
 
+  ESDDebug("Sent handshake");
+
   {
     json message;
     MessageFrame frame;
+    ESDDebug("waiting for reply");
     if (co_await AsyncRead(frame)) {
+      ESDDebug("got reply");
       message = json::parse(frame.message);
       auto cmd = message.value("cmd", "");
       auto evt = message.value("evt", "");
@@ -72,6 +79,7 @@ asio::awaitable<bool> RpcConnection::AsyncOpen() {
         }
       }
     }
+    ESDDebug("connected");
     co_return true;
   }
 }
@@ -82,6 +90,9 @@ bool RpcConnection::Write(const MessageFrame& message) {
 }
 
 void RpcConnection::Close() {
+  if (state == State::Disconnected) {
+    return;
+  }
   if (
     onDisconnect
     && (state == State::Connected || state == State::SentHandshake)) {

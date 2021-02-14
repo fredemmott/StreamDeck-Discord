@@ -160,6 +160,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
 
   mClient = std::make_shared<DiscordClient>(
     mConnectionManager->GetAsioContext(), creds.appId, creds.appSecret, credentials);
+  ESDDebug("Created client, registering calbacks");
   mClient->onStateChanged([=](DiscordClient::State state) {
     std::stringstream logMessage;
     logMessage << "Discord state change: "
@@ -227,6 +228,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     mConnectionManager->LogMessage(logMessage.str());
     mConnectionManager->SetGlobalSettings(mCredentials.toJSON());
   });
+  ESDDebug("Initializing");
   mClient->initializeInCurrentThread();
 }
 

@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
+#include <StreamDeckSDK/ESDLogger.h>
 
 #ifdef __APPLE__
 using asiosock = asio::local::stream_protocol::socket;
@@ -30,12 +31,12 @@ namespace {
 
 static const char* GetTempPath()
 {
-	const char* temp = getenv("XDG_RUNTIME_DIR");
-	temp = temp ? temp : getenv("TMPDIR");
-	temp = temp ? temp : getenv("TMP");
-	temp = temp ? temp : getenv("TEMP");
-	temp = temp ? temp : "/tmp";
-	return temp;
+    const char* temp = getenv("XDG_RUNTIME_DIR");
+    temp = temp ? temp : getenv("TMPDIR");
+    temp = temp ? temp : getenv("TMP");
+    temp = temp ? temp : getenv("TEMP");
+    temp = temp ? temp : "/tmp";
+    return temp;
 }
 
 } // namespace
@@ -62,34 +63,35 @@ bool BaseConnection::Open()
 
 bool BaseConnection::Open()
 {
-	wchar_t pipeName[]{L"\\\\?\\pipe\\discord-ipc-0"};
-	const size_t pipeDigit = sizeof(pipeName) / sizeof(wchar_t) - 2;
-	pipeName[pipeDigit] = L'0';
-	for (;;) {
-		auto pipe = ::CreateFileW(
-		  pipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
-		if (pipe != INVALID_HANDLE_VALUE) {
-			this->isOpen = true;
+    wchar_t pipeName[]{L"\\\\?\\pipe\\discord-ipc-0"};
+    const size_t pipeDigit = sizeof(pipeName) / sizeof(wchar_t) - 2;
+    pipeName[pipeDigit] = L'0';
+    for (;;) {
+        ESDDebug(L"Attempting to connect to pipe {}", pipeName);
+        auto pipe = ::CreateFileW(
+          pipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
+        if (pipe != INVALID_HANDLE_VALUE) {
+            this->isOpen = true;
             this->p->asiosock = std::make_unique<asiosock>(*this->p->asioctx);
             this->p->asiosock->assign(pipe);
-			return true;
-		}
+            return true;
+        }
 
-		auto lastError = GetLastError();
-		if (lastError == ERROR_FILE_NOT_FOUND) {
-			if (pipeName[pipeDigit] < L'9') {
-				pipeName[pipeDigit]++;
-				continue;
-			}
-		}
-		else if (lastError == ERROR_PIPE_BUSY) {
-			if (!WaitNamedPipeW(pipeName, 10000)) {
-				return false;
-			}
-			continue;
-		}
-		return false;
-	}
+        auto lastError = GetLastError();
+        if (lastError == ERROR_FILE_NOT_FOUND) {
+            if (pipeName[pipeDigit] < L'9') {
+                pipeName[pipeDigit]++;
+                continue;
+            }
+        }
+        else if (lastError == ERROR_PIPE_BUSY) {
+            if (!WaitNamedPipeW(pipeName, 10000)) {
+                return false;
+            }
+            continue;
+        }
+        return false;
+    }
 }
 
 
@@ -99,6 +101,9 @@ bool BaseConnection::Close()
 {
     if (!this->p->asiosock) {
         return false;
+    }
+    if (!this->p->asiosock->is_open()) {
+      return false;
     }
     this->p->asiosock->close();
     this->p->asiosock.reset();
@@ -119,31 +124,13 @@ bool BaseConnection::Write(const void* data, size_t length)
     return sentBytes == (ssize_t)length;
 }
 
-bool BaseConnection::Read(void* data, size_t length)
-{
-    if (!this->p->asiosock) {
-        return false;
-    }
-
-    asio::error_code ec;
-    int res = this->p->asiosock->read_some(asio::buffer(data, length), ec);
-    if (ec) {
-        if (ec == asio::error::try_again) {
-            return false;
-        }
-        Close();
-    }
-    else if (res == 0) {
-        Close();
-    }
-    return res == (int)length;
-}
-
 asio::awaitable<bool> BaseConnection::AsyncRead(void* data, size_t length) {
     assert(this->p->asiosock);
     asio::error_code ec;
-    auto res = co_await this->p->asiosock->async_read_some(asio::buffer(data, length), asio::redirect_error(asio::use_awaitable, ec));
+    size_t res;
+    res = co_await this->p->asiosock->async_read_some(asio::buffer(data, length), asio::redirect_error(asio::use_awaitable, ec));
     if (ec) {
+        ESDLog("Error: {} - calling Close", ec.message());
         Close();
         co_return false;
     }

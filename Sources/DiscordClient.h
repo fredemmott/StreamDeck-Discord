@@ -97,6 +97,7 @@ class DiscordClient {
   std::string mAppId;
   std::string mAppSecret;
   asio::awaitable<void> initialize();
+  std::future<void> mWorker;
   std::shared_ptr<asio::io_context> mIOContext;
 
   Credentials getOAuthCredentials(
@@ -109,8 +110,7 @@ class DiscordClient {
   void startAuthenticationWithNewAccessToken();
   bool processDiscordRPCMessage(const nlohmann::json& message);
 
-  bool mRunning = false;
-
+  std::shared_ptr<bool> mRunning;
   std::map<std::string, AwaitablePromise<nlohmann::json>> mPromises;
 
   template<typename TRet, typename TArgs>
