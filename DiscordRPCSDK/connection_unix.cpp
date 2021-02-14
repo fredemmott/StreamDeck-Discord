@@ -39,6 +39,7 @@ BaseConnection::~BaseConnection()
 
 bool BaseConnection::Open()
 {
+    assert(this->p);
     const char* tempPath = GetTempPath();
     this->p->sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (this->p->sock == -1) {

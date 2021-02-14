@@ -23,7 +23,7 @@ void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
 #endif
 
 RpcConnection::RpcConnection(
-  const std::string& applicationId): appId(applicationId) {
+  const std::string& applicationId): appId(applicationId), connection(std::make_unique<BaseConnection>()) {
 }
 
 RpcConnection::~RpcConnection() {
