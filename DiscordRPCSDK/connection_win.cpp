@@ -15,7 +15,7 @@ BaseConnection::BaseConnection()
 {
 }
 
-BaseConnection::~BaseConnection {
+BaseConnection::~BaseConnection() {
     this->Close();
 }
 
