@@ -126,11 +126,7 @@ bool BaseConnection::Read(void* data, size_t length)
     }
 
     asio::error_code ec;
-#ifdef __APPLE__
-    int res = this->p->asiosock->receive(asio::buffer(data, length), 0, ec);
-#else
     int res = this->p->asiosock->read_some(asio::buffer(data, length), ec);
-#endif
     if (ec) {
         if (ec == asio::error::try_again) {
             return false;
