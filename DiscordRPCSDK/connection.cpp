@@ -138,3 +138,17 @@ bool BaseConnection::Read(void* data, size_t length)
     }
     return res == (int)length;
 }
+
+asio::awaitable<bool> BaseConnection::AsyncRead(void* data, size_t length) {
+    assert(this->p->asiosock);
+    asio::error_code ec;
+    auto res = co_await this->p->asiosock->async_read_some(asio::buffer(data, length), asio::redirect_error(asio::use_awaitable, ec));
+    if (ec) {
+        Close();
+        co_return false;
+    }
+    if (res == 0) {
+        Close();
+    }
+    co_return res == length;
+}

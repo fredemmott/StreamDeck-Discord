@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asio.hpp>
+#include <nlohmann/json.hpp>
 
 #include <functional>
 #include <string>
@@ -9,6 +10,7 @@ class DiscordClientThread;
 class RpcConnection;
 
 class DiscordClient {
+  friend class DiscordClientThread;
  public:
 #define DISCORD_CLIENT_RPCSTATES \
   X(UNINITIALIZED) X(CONNECTING) X(REQUESTING_USER_PERMISSION) \
@@ -37,6 +39,7 @@ class DiscordClient {
   typedef std::function<void(const Credentials&)> CredentialsCallback;
 
   DiscordClient(
+    const std::shared_ptr<asio::io_context>& ioContext,
     const std::string& appId,
     const std::string& appSecret,
     const Credentials& credentials);
@@ -53,10 +56,11 @@ class DiscordClient {
 
   // Easy mode...
   void initializeWithBackgroundThread();
+  void initializeInCurrentThread();
 
   // ... or, call these
-  void initialize(const std::shared_ptr<asio::io_context>& ctx);
-  bool processEvents();
+  asio::awaitable<void> initialize();
+  bool processDiscordRPCMessage(const nlohmann::json& message);
 
   std::string getAppId() const;
   std::string getAppSecret() const;
@@ -71,6 +75,7 @@ class DiscordClient {
   std::string mAppId;
   std::string mAppSecret;
   std::unique_ptr<DiscordClientThread> mProcessingThread;
+  std::shared_ptr<asio::io_context> mIOContext;
 
   Credentials getOAuthCredentials(
     const std::string& grantType,
@@ -79,6 +84,7 @@ class DiscordClient {
   void setRpcState(RpcState state);
   void setRpcState(RpcState oldState, RpcState newState);
   std::string getNextNonce();
-  bool processInitializationEvents();
   void startAuthenticationWithNewAccessToken();
+
+  bool mRunning = false;
 };

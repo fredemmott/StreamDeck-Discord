@@ -17,7 +17,6 @@ LICENSE file.
 #include <atomic>
 #include <mutex>
 
-#include "CallbackTimer.h"
 #include "DeafenOffAction.h"
 #include "DeafenOnAction.h"
 #include "DeafenToggleAction.h"
@@ -47,7 +46,6 @@ static_assert(_HAS_CXX17, "C++17 feature flag not enabled");
 
 DiscordStreamDeckPlugin::DiscordStreamDeckPlugin() {
   mHaveRequestedGlobalSettings = false;
-  mTimer = std::make_unique<CallBackTimer>();
 }
 
 DiscordStreamDeckPlugin::~DiscordStreamDeckPlugin() {
@@ -137,7 +135,7 @@ void DiscordStreamDeckPlugin::ReconnectToDiscord() {
 }
 
 void DiscordStreamDeckPlugin::ConnectToDiscord() {
-  mConnectionManager->LogMessage("Connecting to Discord");
+  ESDDebug("Connecting to discord");
   Credentials creds = mCredentials;
 
   DiscordClient::Credentials credentials;
@@ -155,7 +153,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
   }
 
   mClient = std::make_shared<DiscordClient>(
-    creds.appId, creds.appSecret, credentials);
+    mConnectionManager->GetAsioContext(), creds.appId, creds.appSecret, credentials);
   mClient->onStateChanged([=](DiscordClient::State state) {
     std::stringstream logMessage;
     logMessage << "Discord state change: "
@@ -202,7 +200,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
   });
   mClient->onReady([=](DiscordClient::State state) {
     mConnectionManager->LogMessage("Connected to Discord");
-    mTimer->stop();
     const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mActionsMutex);
     for (const auto& [ctx, action] : mActions) {
@@ -224,13 +221,13 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     mConnectionManager->LogMessage(logMessage.str());
     mConnectionManager->SetGlobalSettings(mCredentials.toJSON());
   });
-  mClient->initializeWithBackgroundThread();
+  mClient->initializeInCurrentThread();
 }
 
 void DiscordStreamDeckPlugin::ConnectToDiscordLater() {
-  if (mTimer->is_running()) {
-    return;
-  }
+  ESDDebug("ConnectToDiscordLater, ignoring");
+  return;
+  /*
   mConnectionManager->LogMessage("Will try to connect in 1 second...");
 
   mTimer->start(1000, [=]() {
@@ -244,6 +241,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscordLater() {
     }
     ConnectToDiscord();
   });
+  */
 }
 
 void DiscordStreamDeckPlugin::DeviceDidConnect(

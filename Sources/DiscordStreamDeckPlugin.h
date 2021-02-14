@@ -21,7 +21,6 @@ using json = nlohmann::json;
 
 #include "DiscordESDAction.h"
 
-class CallBackTimer;
 class DiscordClient;
 
 class DiscordStreamDeckPlugin : public ESDPlugin {
@@ -75,7 +74,6 @@ class DiscordStreamDeckPlugin : public ESDPlugin {
   Credentials mCredentials;
 
   std::shared_ptr<DiscordClient> mClient;
-  std::unique_ptr<CallBackTimer> mTimer;
   bool mHaveRequestedGlobalSettings;
 
   void ConnectToDiscord();

@@ -32,11 +32,12 @@ class DiscordClientThread {
     };
     _execute.store(true, std::memory_order_release);
     _thd = std::thread([this]() {
-      while (_execute.load(std::memory_order_acquire)) {
-        if (!_client->processEvents()) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-      }
+      auto f = asio::co_spawn(
+        *_client->mIOContext,
+        impl(),
+        asio::use_future
+      );
+      f.wait();
     });
   }
 
@@ -45,6 +46,14 @@ class DiscordClientThread {
   }
 
  private:
+  asio::awaitable<void> impl() {
+    while (_execute.load(std::memory_order_acquire)) {
+      nlohmann::json buf;
+      co_await _client->mConnection->AsyncRead(&buf);
+      _client->processDiscordRPCMessage(buf);
+    }
+  }
+
   std::atomic<bool> _execute;
   std::thread _thd;
   DiscordClient* _client;
@@ -63,10 +72,12 @@ const char* DiscordClient::getRpcStateName(RpcState state) {
 }
 
 DiscordClient::DiscordClient(
+  const std::shared_ptr<asio::io_context>& ctx,
   const std::string& appId,
   const std::string& appSecret,
   const Credentials& credentials) {
   mState.rpcState = RpcState::UNINITIALIZED;
+  mIOContext = ctx;
   mAppId = appId;
   mAppSecret = appSecret;
   mCredentials = credentials;
@@ -77,23 +88,48 @@ DiscordClient::DiscordClient(
 }
 
 DiscordClient::~DiscordClient() {
+  mRunning = false;
 }
 
 void DiscordClient::initializeWithBackgroundThread() {
-  auto ctx = std::make_shared<asio::io_context>();
-  initialize(ctx);
-  mProcessingThread = std::make_unique<DiscordClientThread>(this);
-  mProcessingThread->start();
+  asio::co_spawn(
+    *mIOContext,
+    [this]() -> asio::awaitable<void> {
+      co_await initialize();
+      mProcessingThread = std::make_unique<DiscordClientThread>(this);
+      mProcessingThread->start();
+    },
+    asio::detached
+  );
 }
 
-void DiscordClient::initialize(const std::shared_ptr<asio::io_context>& ctx) {
+void DiscordClient::initializeInCurrentThread() {
+  asio::co_spawn(
+    *mIOContext,
+    [this]() -> asio::awaitable<void> {
+      co_await initialize();
+      mRunning = true;
+      while(mRunning) {
+        nlohmann::json msg;
+        auto success = co_await mConnection->AsyncRead(&msg);
+        if (!success) {
+          break;
+        }
+        processDiscordRPCMessage(msg);
+      }
+    },
+    asio::detached
+  );
+}
+
+asio::awaitable<void> DiscordClient::initialize() {
   if (mAppId.empty() || mAppSecret.empty()) {
     setRpcState(RpcState::UNINITIALIZED, RpcState::AUTHENTICATION_FAILED);
-    return;
+    co_return;
   }
 
   setRpcState(RpcState::UNINITIALIZED, RpcState::CONNECTING);
-  mConnection = std::make_unique<RpcConnection>(ctx, mAppId);
+  mConnection = std::make_unique<RpcConnection>(mIOContext, mAppId);
   mConnection->onDisconnect = [=](int code, const std::string& message) {
     ESDDebug("disconnected - {} {}", code, message.c_str());
     switch (this->mState.rpcState) {
@@ -108,20 +144,8 @@ void DiscordClient::initialize(const std::shared_ptr<asio::io_context>& ctx) {
         return;
     }
   };
-  mConnection->Open();
-}
 
-bool DiscordClient::processInitializationEvents() {
-  assert(mState.rpcState == RpcState::CONNECTING);
-  if (mConnection->state == RpcConnection::State::Disconnected) {
-    setRpcState(RpcState::CONNECTING, RpcState::CONNECTION_FAILED);
-    return false;
-  }
-
-  if (!mConnection->IsOpen()) {
-    mConnection->Open();
-    return true;
-  }
+  co_await mConnection->AsyncOpen();
 
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
@@ -129,7 +153,7 @@ bool DiscordClient::processInitializationEvents() {
       {{"nonce", getNextNonce()},
        {"cmd", "AUTHORIZE"},
        {"args", {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
-    return true;
+    co_return;
   }
 
   setRpcState(RpcState::CONNECTING, RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
@@ -137,7 +161,8 @@ bool DiscordClient::processInitializationEvents() {
     {{"nonce", getNextNonce()},
      {"cmd", "AUTHENTICATE"},
      {"args", {{"access_token", mCredentials.accessToken}}}});
-  return true;
+  co_return;
+
 }
 
 void DiscordClient::startAuthenticationWithNewAccessToken() {
@@ -150,15 +175,7 @@ void DiscordClient::startAuthenticationWithNewAccessToken() {
      {"args", {"access_token", mCredentials.accessToken}}});
 }
 
-bool DiscordClient::processEvents() {
-  if (mState.rpcState == RpcState::CONNECTING) {
-    return processInitializationEvents();
-  }
-
-  json message;
-  if (!mConnection->Read(&message)) {
-    return false;
-  }
+bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   const auto command = EPLJSONUtils::GetStringByName(message, "cmd");
   const auto event = EPLJSONUtils::GetStringByName(message, "evt");
   json data;
@@ -241,7 +258,7 @@ bool DiscordClient::processEvents() {
         }
       }
       if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
-        mState.rpcState = RpcState::READY;
+        setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::READY);
         mReadyCallback(mState);
       }
       mStateCallback(mState);

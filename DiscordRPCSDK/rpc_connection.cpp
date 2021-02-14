@@ -27,36 +27,22 @@ void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
 RpcConnection::RpcConnection(
   const std::shared_ptr<asio::io_context>& ctx,
   const std::string& applicationId
-): appId(applicationId), connection(std::make_unique<BaseConnection>(ctx)) {
+): appId(applicationId), ioContext(ctx), connection(std::make_unique<BaseConnection>(ctx)) {
 }
 
 RpcConnection::~RpcConnection() {
 }
 
-void RpcConnection::Open() {
-  if (state == State::Connected) {
-    return;
+asio::awaitable<bool> RpcConnection::AsyncOpen() {
+  if (state != State::Disconnected) {
+    co_return false;
   }
 
-  if (state == State::Disconnected && !connection->Open()) {
-    return;
+  if (!connection->Open()) {
+    co_return false;
   }
 
-  if (state == State::SentHandshake) {
-    json message;
-    MessageFrame frame;
-    if (Read(frame)) {
-      message = json::parse(frame.message);
-      auto cmd = EPLJSONUtils::GetStringByName(message, "cmd");
-      auto evt = EPLJSONUtils::GetStringByName(message, "evt");
-      if (cmd == "DISPATCH" && evt == "READY") {
-        state = State::Connected;
-        if (onConnect) {
-          onConnect(message);
-        }
-      }
-    }
-  } else {
+  {
     json message;
     message["v"] = RpcVersion;
     message["client_id"] = appId;
@@ -69,7 +55,25 @@ void RpcConnection::Open() {
       state = State::SentHandshake;
     } else {
       Close();
+      co_return false;
     }
+  }
+
+  {
+    json message;
+    MessageFrame frame;
+    if (co_await AsyncRead(frame)) {
+      message = json::parse(frame.message);
+      auto cmd = EPLJSONUtils::GetStringByName(message, "cmd");
+      auto evt = EPLJSONUtils::GetStringByName(message, "evt");
+      if (cmd == "DISPATCH" && evt == "READY") {
+        state = State::Connected;
+        if (onConnect) {
+          onConnect(message);
+        }
+      }
+    }
+    co_return true;
   }
 }
 
@@ -96,7 +100,6 @@ void RpcConnection::Write(const json& message) {
 }
 
 bool RpcConnection::Write(const void* data, size_t length) {
-  ESDDebug("sending: {}", data);
   sendFrame.opcode = Opcode::Frame;
   memcpy_s(sendFrame.message, sizeof(sendFrame.message), data, length);
   sendFrame.length = (uint32_t)length;
@@ -107,37 +110,37 @@ bool RpcConnection::Write(const void* data, size_t length) {
   return true;
 }
 
-bool RpcConnection::Read(json* message) {
+asio::awaitable<bool> RpcConnection::AsyncRead(json* message) {
   MessageFrame frame;
-  if (!Read(frame)) {
-    return false;
+  if (!co_await AsyncRead(frame)) {
+    co_return false;
   }
   *message = json::parse(frame.message);
-  return true;
+  co_return true;
 }
 
-bool RpcConnection::Read(MessageFrame& readFrame) {
+asio::awaitable<bool> RpcConnection::AsyncRead(MessageFrame& readFrame) {
   if (state != State::Connected && state != State::SentHandshake) {
-    return false;
+    co_return false;
   }
   for (;;) {
-    bool didRead = connection->Read(&readFrame, sizeof(MessageFrameHeader));
+    bool didRead = co_await connection->AsyncRead(&readFrame, sizeof(MessageFrameHeader));
     if (!didRead) {
       if (!connection->isOpen) {
         lastErrorCode = (int)ErrorCode::PipeClosed;
         lastErrorMessage = "Pipe closed";
         Close();
       }
-      return false;
+      co_return false;
     }
 
     if (readFrame.length > 0) {
-      didRead = connection->Read(readFrame.message, readFrame.length);
+      didRead = co_await connection->AsyncRead(readFrame.message, readFrame.length);
       if (!didRead) {
         lastErrorCode = (int)ErrorCode::ReadCorrupt;
         lastErrorMessage = "Partial data in frame";
         Close();
-        return false;
+        co_return false;
       }
       readFrame.message[readFrame.length] = 0;
     }
@@ -148,11 +151,10 @@ bool RpcConnection::Read(MessageFrame& readFrame) {
         lastErrorCode = EPLJSONUtils::GetIntByName(json, "code");
         lastErrorMessage = EPLJSONUtils::GetStringByName(json, "message");
         Close();
-        return false;
+        co_return false;
       }
       case Opcode::Frame:
-        ESDDebug("received: {}", readFrame.message);
-        return true;
+        co_return true;
       case Opcode::Ping:
         readFrame.opcode = Opcode::Pong;
         if (!connection->Write(
@@ -168,7 +170,7 @@ bool RpcConnection::Read(MessageFrame& readFrame) {
         lastErrorCode = (int)ErrorCode::ReadCorrupt;
         lastErrorMessage = "Bad ipc frame";
         Close();
-        return false;
+        co_return false;
     }
   }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asio.hpp>
+#include <asio/awaitable.hpp>
 #include <nlohmann/json.hpp>
 
 #include <functional>
@@ -40,7 +41,6 @@ struct RpcConnection {
     enum class State : uint32_t {
         Disconnected,
         SentHandshake,
-        AwaitingResponse,
         Connected,
     };
 
@@ -57,13 +57,14 @@ struct RpcConnection {
 
     inline bool IsOpen() const { return state == State::Connected; }
 
-    void Open();
+    asio::awaitable<bool> AsyncOpen();
     void Close();
 	void Write(const json& message);
-	bool Read(json* message);
+	asio::awaitable<bool> AsyncRead(json* message);
 private:
-    bool Read(MessageFrame& message);
+    asio::awaitable<bool> AsyncRead(MessageFrame& message);
 	bool Write(const MessageFrame& message);
     bool Write(const void* data, size_t length);
     std::unique_ptr<BaseConnection> connection{nullptr};
+    std::shared_ptr<asio::io_context> ioContext;
 };
