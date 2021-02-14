@@ -2,8 +2,8 @@ include(ExternalProject)
 
 ExternalProject_Add(
   StreamDeckSDK_build
-  URL https://github.com/fredemmott/StreamDeck-CPPSDK/releases/download/v2.0-rc8/StreamDeckSDK-v2.0-rc8.zip
-  URL_HASH SHA512=820e0a28144cc52aeacb0b0fd0c5ac444837415df77cfe2b111753575a767a056998a5b36c9434974d6183fec58f8d8586333dcb014a58fbb329baade1105227
+  URL https://github.com/fredemmott/StreamDeck-CPPSDK/releases/download/v2.0-rc9/StreamDeckSDK-v2.0-rc9.zip
+  URL_HASH SHA512=8bb4b9433bbade078820d6379afb009aa54ade309be983cb7b23b934f99311907690e699ef840318cf83f51fe2c9d6d53c64e1c48d5cb53437e2a22f11260594
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}

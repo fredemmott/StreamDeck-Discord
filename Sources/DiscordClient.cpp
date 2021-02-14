@@ -7,6 +7,9 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
+#include <optional>
+
+using namespace DiscordPayloads;
 
 class DiscordClientThread {
  public:
@@ -49,8 +52,11 @@ class DiscordClientThread {
   asio::awaitable<void> impl() {
     while (_execute.load(std::memory_order_acquire)) {
       nlohmann::json buf;
-      co_await _client->mConnection->AsyncRead(&buf);
+      ESDDebug("Waiting for message in background thread");
+      auto success = co_await _client->mConnection->AsyncRead(&buf);
+      ESDDebug("Read message? {}", (const char*) (success ? "true" : "false"));
       _client->processDiscordRPCMessage(buf);
+      ESDDebug("Processed message!");
     }
   }
 
@@ -111,11 +117,14 @@ void DiscordClient::initializeInCurrentThread() {
       mRunning = true;
       while(mRunning) {
         nlohmann::json msg;
+        ESDDebug("Waiting for message in main thread");
         auto success = co_await mConnection->AsyncRead(&msg);
         if (!success) {
+          ESDDebug("Failed to read message");
           break;
         }
         processDiscordRPCMessage(msg);
+        ESDDebug("Processed message");
       }
     },
     asio::detached
@@ -175,8 +184,55 @@ void DiscordClient::startAuthenticationWithNewAccessToken() {
      {"args", {"access_token", mCredentials.accessToken}}});
 }
 
+// Should be unneeded in a later release of nlohmann/json
+// https://github.com/nlohmann/json/pull/2117
+namespace nlohmann {
+template <typename T>
+struct adl_serializer<std::optional<T>> {
+  static void to_json(json& j, const std::optional<T>& opt) {
+    if (opt == std::nullopt) {
+      j = nullptr;
+    } else {
+      j = *opt;
+    }
+  }
+
+  static void from_json(const json& j, std::optional<T>& opt) {
+    if (j.is_null()) {
+      opt = std::nullopt;
+    } else {
+      opt = j.get<T>();
+    }
+  }
+};
+}// namespace nlohmann
+
+namespace {
+  struct BaseMessage {
+    std::string cmd;
+    std::optional<std::string> nonce;
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BaseMessage, cmd, nonce);
+} // namespace
+
 bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
-  const auto command = EPLJSONUtils::GetStringByName(message, "cmd");
+  ESDDebug("Received message {}", message.dump());
+  auto parsed = message.get<BaseMessage>();
+  if (parsed.nonce.has_value()) {
+    const auto nonce = *parsed.nonce;
+    ESDDebug("Nonce: {}", nonce);
+    auto promise = mPromises.find(nonce);
+    if (promise != mPromises.end()) {
+      ESDDebug("Found promise");
+      promise->second.resolve(message["data"]);
+      mPromises.erase(nonce);
+      return true;
+    }
+    ESDDebug("No promise");
+  }
+
+  const auto command = parsed.cmd;
+  ESDDebug("Command: {}", command);
   const auto event = EPLJSONUtils::GetStringByName(message, "evt");
   json data;
   const bool haveData = EPLJSONUtils::GetObjectByName(message, "data", data);
@@ -244,11 +300,18 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
 
   if (command == "GET_VOICE_SETTINGS" || event == "VOICE_SETTINGS_UPDATE") {
     if (haveData) {
-      mState.isMuted = EPLJSONUtils::GetBoolByName(data, "mute");
-      mState.isDeafened = EPLJSONUtils::GetBoolByName(data, "deaf");
+      if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
+        setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::READY);
+      }
+      ESDDebug("Have data");
+      const VoiceSettingsResponse response = data;
+      ESDDebug("Decoded");
+      mState.isMuted = response.mute;
+      mState.isDeafened = response.deaf;
 
       json mode;
       const bool haveMode = EPLJSONUtils::GetObjectByName(data, "mode", mode);
+      ESDDebug("have mode? {}", haveMode);
       if (haveMode) {
         const auto type = EPLJSONUtils::GetStringByName(mode, "type");
         if (type == "PUSH_TO_TALK") {
@@ -257,11 +320,10 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
           mState.isPTT = false;
         }
       }
-      if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
-        setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::READY);
-        mReadyCallback(mState);
+      if (mStateCallback) {
+        mStateCallback(mState);
       }
-      mStateCallback(mState);
+      ESDDebug("All done");
     }
     return true;
   }
@@ -308,6 +370,7 @@ void DiscordClient::setIsMuted(bool mute) {
 void DiscordClient::setIsDeafened(bool deaf) {
   json args;
   args["deaf"] = deaf;
+  ESDDebug("Setting deaf to {}", deaf);
   mConnection->Write(
     {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
 }
@@ -329,9 +392,27 @@ void DiscordClient::setRpcState(RpcState state) {
   if (mStateCallback) {
     mStateCallback(mState);
   }
+  if (state == RpcState::READY && mReadyCallback) {
+    mReadyCallback(mState);
+  }
 }
 
 void DiscordClient::setRpcState(RpcState oldState, RpcState newState) {
   assert(mState.rpcState == oldState);
   setRpcState(newState);
+}
+
+template<typename TRet, typename TArgs>
+asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArgs& args) {
+  auto nonce = getNextNonce();
+  nlohmann::json request {
+    { "cmd", command },
+    { "nonce", nonce },
+    { "args", nlohmann::json(args) }
+  };
+  AwaitablePromise<nlohmann::json> p(mIOContext);
+  mPromises.emplace(nonce, p);
+  mConnection->Write(request.dump());
+  const auto json_response = co_await p.async_wait();
+  co_return json_response;
 }

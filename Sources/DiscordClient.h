@@ -1,13 +1,42 @@
 #pragma once
 
+#include "AwaitablePromise.h"
+
 #include <asio.hpp>
 #include <nlohmann/json.hpp>
 
 #include <functional>
 #include <string>
+#include <map>
 
 class DiscordClientThread;
 class RpcConnection;
+
+namespace DiscordPayloads {
+  enum class VoiceSettingsModeType {
+    PUSH_TO_TALK,
+    VOICE_ACTIVITY,
+  };
+  NLOHMANN_JSON_SERIALIZE_ENUM(
+    VoiceSettingsModeType, {
+    { VoiceSettingsModeType::PUSH_TO_TALK, "PUSH_TO_TALK" },
+    { VoiceSettingsModeType::VOICE_ACTIVITY, "VOICE_ACTIVITY" },
+  });
+  struct VoiceSettingsMode {
+    VoiceSettingsModeType type;
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    VoiceSettingsMode, type
+  );
+  struct VoiceSettingsResponse {
+    bool deaf;
+    bool mute;
+    VoiceSettingsMode mode;
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    VoiceSettingsResponse, deaf, mute, mode
+  );
+}
 
 class DiscordClient {
   friend class DiscordClientThread;
@@ -85,4 +114,9 @@ class DiscordClient {
   bool processDiscordRPCMessage(const nlohmann::json& message);
 
   bool mRunning = false;
+
+  std::map<std::string, AwaitablePromise<nlohmann::json>> mPromises;
+
+  template<typename TRet, typename TArgs>
+  asio::awaitable<TRet> commandImpl(const char* command, const TArgs& args);
 };

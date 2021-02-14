@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DiscordESDAction.h"
+#include <StreamDeckSDK/ESDLogger.h>
 
 class DeafenToggleAction final : public DiscordESDAction {
  public:
@@ -9,6 +10,7 @@ class DeafenToggleAction final : public DiscordESDAction {
   virtual std::string GetActionID() const override { return ACTION_ID; }
 
   virtual void KeyUp(std::shared_ptr<DiscordClient> client) override {
+    ESDDebug("KeyUp time!");
     client->setIsDeafened(!mDiscordState.isDeafened);
   }
 

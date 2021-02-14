@@ -199,7 +199,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     return;
   });
   mClient->onReady([=](DiscordClient::State state) {
-    mConnectionManager->LogMessage("Connected to Discord");
+    ESDDebug("Client ready");
     const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mActionsMutex);
     for (const auto& [ctx, action] : mActions) {
