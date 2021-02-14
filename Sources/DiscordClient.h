@@ -40,6 +40,8 @@ namespace DiscordPayloads {
 template<class T>
 class PubSubData {
   public:
+    typedef T Data;
+
     PubSubData() {};
     virtual ~PubSubData() {};
     PubSubData(const PubSubData&) = delete;
@@ -47,7 +49,9 @@ class PubSubData {
 
     typedef std::function<void(const T&)> Subscriber;
 
-    virtual const T* const operator->() const = 0;
+    virtual const T* const get() const = 0;
+    const T* const operator->() const { return get(); }
+
     virtual operator bool() const = 0;
     virtual void subscribe(Subscriber) = 0;
 };

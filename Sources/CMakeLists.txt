@@ -4,6 +4,7 @@ set(
   DiscordESDAction.cpp
   DiscordESDActionV2.cpp
   DiscordESDActionIDs.cpp
+  DiscordVoiceSettingsAction.cpp
   DiscordStreamDeckPlugin.cpp
   main.cpp
 )

@@ -26,7 +26,7 @@ class PubSubDataImpl : public PubSubData<T> {
       return mData.has_value();
     }
 
-    virtual const T* const operator->() const override {
+    virtual const T* const get() const override {
       return &mData.value();
     }
 

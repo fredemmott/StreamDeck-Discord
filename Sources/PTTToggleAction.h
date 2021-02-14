@@ -1,18 +1,18 @@
 #pragma once
 
-#include "DiscordESDAction.h"
+#include "DiscordVoiceSettingsAction.h"
 
-class PTTToggleAction final : public DiscordESDAction {
+class PTTToggleAction final : public DiscordVoiceSettingsAction{
  public:
-  using DiscordESDAction::DiscordESDAction;
+  using DiscordVoiceSettingsAction::DiscordVoiceSettingsAction;
   static const std::string ACTION_ID;
   virtual std::string GetActionID() const override { return ACTION_ID; }
 
-  virtual void KeyUp(std::shared_ptr<DiscordClient> client) override {
-    client->setIsPTT(!mDiscordState.isPTT);
+  virtual void KeyUp(DiscordClient& client) override {
+    client.setIsPTT(client.getVoiceSettings()->mode.type != DiscordPayloads::VoiceSettingsModeType::PUSH_TO_TALK);
   }
 
-  virtual int GetDesiredState(const DiscordClient::State& state) override {
-      return state.isPTT ? 1 : 0;
+  virtual int GetDesiredState(const DiscordClient::VoiceSettings::Data& state) override {
+      return state.mode.type == DiscordPayloads::VoiceSettingsModeType::PUSH_TO_TALK ? 1 : 0;
   }
 };

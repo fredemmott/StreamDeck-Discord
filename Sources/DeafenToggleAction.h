@@ -1,37 +1,21 @@
 #pragma once
 
-#include "DiscordESDActionV2.h"
-#include <StreamDeckSDK/ESDConnectionManager.h>
-#include <StreamDeckSDK/ESDLogger.h>
+#include "DiscordVoiceSettingsAction.h"
 
-class DeafenToggleAction final : public DiscordESDActionV2 {
+class DeafenToggleAction final : public DiscordVoiceSettingsAction {
  public:
-  using DiscordESDActionV2::DiscordESDActionV2;
+  using DiscordVoiceSettingsAction::DiscordVoiceSettingsAction;
   static const std::string ACTION_ID;
   virtual std::string GetActionID() const override { return ACTION_ID; }
 
  protected:
   virtual void KeyUp(DiscordClient& client) override {
-    const auto& settings = client.getVoiceSettings();
-    ESDDebug("KeyUp");
-    client.setIsDeafened(!settings->deaf);
+    client.setIsDeafened(!client.getVoiceSettings()->deaf);
   }
 
-  virtual int GetDesiredState(const DiscordClient& client) override {
-      const auto& settings = client.getVoiceSettings();
-      ESDDebug("Setting settings");
-      return settings->deaf ? 1 : 0;
-  }
-
-  virtual void Reconnected(DiscordClient& client) {
-    client.getVoiceSettings().subscribe(
-      [this](const auto& settings) {
-        ESDDebug("In reconnected callback");
-        GetESD()->SetState(
-          settings.deaf ? 1 : 0,
-          GetContext()
-        );
-      }
-    );
+  virtual int GetDesiredState(
+    const DiscordClient::VoiceSettings::Data& settings
+  ) override {
+    return settings.deaf ? 1 : 0;
   }
 };

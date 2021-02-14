@@ -1,18 +1,21 @@
 #pragma once
 
-#include "DiscordESDAction.h"
+#include "DiscordVoiceSettingsAction.h"
 
-class SelfMuteOnAction final : public DiscordESDAction {
+class SelfMuteOnAction final : public DiscordVoiceSettingsAction {
  public:
-  using DiscordESDAction::DiscordESDAction;
+  using DiscordVoiceSettingsAction::DiscordVoiceSettingsAction;
   static const std::string ACTION_ID;
   virtual std::string GetActionID() const override { return ACTION_ID; }
 
-  virtual void KeyUp(std::shared_ptr<DiscordClient> client) override {
-    client->setIsMuted(true);
+ protected:
+  virtual void KeyUp(DiscordClient& client) override {
+    client.setIsMuted(true);
   }
 
-  virtual int GetDesiredState(const DiscordClient::State& state) override {
-      return state.isMuted ? 0 : 1;
+  virtual int GetDesiredState(
+    const DiscordClient::VoiceSettings::Data& settings
+  ) override {
+    return (settings.deaf || settings.mute) ? 0 : 1;
   }
 };
