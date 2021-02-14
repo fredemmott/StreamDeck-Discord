@@ -3,7 +3,6 @@
 #include "connection.h"
 
 #include "StreamDeckSDK/ESDLogger.h"
-#include "StreamDeckSDK/EPLJSONUtils.h"
 
 #include <algorithm>
 #include <atomic>
@@ -64,8 +63,8 @@ asio::awaitable<bool> RpcConnection::AsyncOpen() {
     MessageFrame frame;
     if (co_await AsyncRead(frame)) {
       message = json::parse(frame.message);
-      auto cmd = EPLJSONUtils::GetStringByName(message, "cmd");
-      auto evt = EPLJSONUtils::GetStringByName(message, "evt");
+      auto cmd = message.value("cmd", "");
+      auto evt = message.value("evt", "");
       if (cmd == "DISPATCH" && evt == "READY") {
         state = State::Connected;
         if (onConnect) {
@@ -148,8 +147,8 @@ asio::awaitable<bool> RpcConnection::AsyncRead(MessageFrame& readFrame) {
     switch (readFrame.opcode) {
       case Opcode::Close: {
         auto json = json::parse(readFrame.message);
-        lastErrorCode = EPLJSONUtils::GetIntByName(json, "code");
-        lastErrorMessage = EPLJSONUtils::GetStringByName(json, "message");
+        lastErrorCode = json.value("code", -1);
+        lastErrorMessage = json.value("message", "");
         Close();
         co_return false;
       }
