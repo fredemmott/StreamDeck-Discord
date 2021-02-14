@@ -165,9 +165,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     std::stringstream logMessage;
     logMessage << "Discord state change: "
                << "rpcState = "
-               << DiscordClient::getRpcStateName(state.rpcState)
-               << ", muted = " << state.isMuted
-               << ", deafened = " << state.isDeafened;
+               << DiscordClient::getRpcStateName(state.rpcState);
 
     mConnectionManager->LogMessage(logMessage.str());
 
@@ -207,7 +205,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
   });
   mClient->onReady([=](DiscordClient::State state) {
     ESDDebug("Client ready");
-    const bool isMuted = state.isMuted || state.isDeafened;
     std::scoped_lock lock(mActionsMutex);
     for (const auto& [ctx, action] : mActions) {
       action->SetDiscordClient(mClient);

@@ -61,7 +61,7 @@ class DiscordClient {
 #define DISCORD_CLIENT_RPCSTATES \
   X(UNINITIALIZED) X(CONNECTING) X(REQUESTING_USER_PERMISSION) \
     X(REQUESTING_ACCESS_TOKEN) X(AUTHENTICATING_WITH_ACCESS_TOKEN) \
-    X(REQUESTING_VOICE_STATE) X(WAITING_FOR_INITIAL_DATA) X(READY) \
+    X(WAITING_FOR_INITIAL_DATA) X(READY) \
     X(CONNECTION_FAILED) X(AUTHENTICATION_FAILED) X(DISCONNECTED)
 
   enum class RpcState {
@@ -73,9 +73,6 @@ class DiscordClient {
 
   struct State {
     RpcState rpcState;
-    bool isDeafened;
-    bool isMuted;
-    bool isPTT;
   };
   typedef std::function<void(const State&)> StateCallback;
   struct Credentials {

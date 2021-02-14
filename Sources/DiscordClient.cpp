@@ -293,50 +293,20 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
     }
     setRpcState(
       RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN,
-      RpcState::REQUESTING_VOICE_STATE);
+      RpcState::WAITING_FOR_INITIAL_DATA);
     subscribeImpl("VOICE_SETTINGS_UPDATE", mVoiceSettings);
 
-    mConnection->Write({
-      {"nonce", getNextNonce()},
-      {"cmd", "GET_VOICE_SETTINGS"},
-    });
-    return true;
-  }
-
-  if (command == "GET_VOICE_SETTINGS" || event == "VOICE_SETTINGS_UPDATE") {
-    if (data) {
-      if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
-        setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::WAITING_FOR_INITIAL_DATA);
-        asio::co_spawn(
-          *mIOContext,
-          [this]() -> asio::awaitable<void> {
-            ESDDebug("Waiting for init promises");
-            for (auto& p: mInitPromises) {
-              co_await p.async_wait();
-            }
-            setRpcState(RpcState::WAITING_FOR_INITIAL_DATA, RpcState::READY);
-          },
-          asio::detached
-        );
-      }
-      const auto response = data->get<VoiceSettingsResponse>();
-      mState.isMuted = response.mute;
-      mState.isDeafened = response.deaf;
-
-      json mode;
-      const bool haveMode = EPLJSONUtils::GetObjectByName(data, "mode", mode);
-      if (haveMode) {
-        const auto type = EPLJSONUtils::GetStringByName(mode, "type");
-        if (type == "PUSH_TO_TALK") {
-          mState.isPTT = true;
-        } else if (type == "VOICE_ACTIVITY") {
-          mState.isPTT = false;
+    asio::co_spawn(
+      *mIOContext,
+      [this]() -> asio::awaitable<void> {
+        ESDDebug("Waiting for init promises");
+        for (auto& p: mInitPromises) {
+          co_await p.async_wait();
         }
-      }
-      if (mStateCallback) {
-        mStateCallback(mState);
-      }
-    }
+        setRpcState(RpcState::WAITING_FOR_INITIAL_DATA, RpcState::READY);
+      },
+      asio::detached
+    );
     return true;
   }
 
