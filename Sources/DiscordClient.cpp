@@ -237,7 +237,7 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   const auto event = parsed.evt;
   const auto data = parsed.data;
   if (command == "AUTHORIZE") {
-    const auto code = EPLJSONUtils::GetStringByName(data, "code");
+    const auto code = data->value("code", "");
     if (code.empty() || event == "error") {
       setRpcState(
         RpcState::REQUESTING_USER_PERMISSION, RpcState::AUTHENTICATION_FAILED);
