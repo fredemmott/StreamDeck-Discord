@@ -38,7 +38,7 @@ class PubSubDataImpl : public PubSubData<T> {
       }
     }
   private:
-    std::vector<typename Subscriber> mSubscribers;
+    std::vector<Subscriber> mSubscribers;
     std::optional<T> mData;
 };
 
@@ -424,7 +424,7 @@ asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArg
   };
   AwaitablePromise<nlohmann::json> p(*mIOContext);
   mPromises.emplace(nonce, p);
-  mConnection->Write(request.dump());
+  mConnection->Write(request);
   const auto json_response = co_await p.async_wait();
   co_return json_response;
 }

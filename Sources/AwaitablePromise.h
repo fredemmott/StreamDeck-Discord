@@ -40,7 +40,7 @@ template<class T>
 struct AwaitablePromise : public AwaitablePromiseBase<T> {
   AwaitablePromise(
     asio::io_context& ctx
-  ) : AwaitablePromiseBase(ctx), mData(std::make_shared<T>()) {
+  ) : AwaitablePromiseBase<T>(ctx), mData(std::make_shared<T>()) {
   }
 
   void resolve(T data) noexcept {
@@ -62,5 +62,6 @@ struct AwaitablePromise : public AwaitablePromiseBase<T> {
 
 template<>
 struct AwaitablePromise<void> : public AwaitablePromiseBase<void> {
+  using AwaitablePromiseBase<void>::AwaitablePromiseBase;
   using AwaitablePromiseBase<void>::resolve;
 };
