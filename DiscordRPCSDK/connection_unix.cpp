@@ -13,7 +13,6 @@ struct BaseConnection::Impl {
     int sock{-1};
 };
 
-static BaseConnection Connection;
 #ifdef MSG_NOSIGNAL
 static int MsgFlags = MSG_NOSIGNAL;
 #else
@@ -30,7 +29,7 @@ static const char* GetTempPath()
     return temp;
 }
 
-BaseConnection::BaseConnection() : p(new BaseConnection::Impl) {}
+BaseConnection::BaseConnection(const std::shared_ptr<asio::io_context>&) : p(new BaseConnection::Impl) {}
 
 BaseConnection::~BaseConnection()
 {

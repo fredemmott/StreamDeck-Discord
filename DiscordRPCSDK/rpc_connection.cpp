@@ -27,7 +27,7 @@ void memcpy_s(void* dst, size_t dstSize, const void* src, size_t srcSize) {
 RpcConnection::RpcConnection(
   const std::shared_ptr<asio::io_context>& ctx,
   const std::string& applicationId
-): appId(applicationId), connection(std::make_unique<BaseConnection>()) {
+): appId(applicationId), connection(std::make_unique<BaseConnection>(ctx)) {
 }
 
 RpcConnection::~RpcConnection() {

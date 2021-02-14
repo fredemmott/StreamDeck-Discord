@@ -2,11 +2,12 @@
 
 // This is to wrap the platform specific kinds of connect/read/write.
 
+#include <asio.hpp>
 #include <memory>
 #include <cstdint>
 
 struct BaseConnection final {
-    BaseConnection();
+    BaseConnection(const std::shared_ptr<asio::io_context>&);
     ~BaseConnection();
 
     bool isOpen{false};

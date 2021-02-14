@@ -11,7 +11,7 @@ struct BaseConnection::Impl {
     HANDLE pipe{INVALID_HANDLE_VALUE};
 };
 
-BaseConnection::BaseConnection()
+BaseConnection::BaseConnection(const std::shared_ptr<asio::io_context>&)
 {
 }
 
