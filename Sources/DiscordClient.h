@@ -57,8 +57,8 @@ class DiscordClient {
 #define DISCORD_CLIENT_RPCSTATES \
   X(UNINITIALIZED) X(CONNECTING) X(REQUESTING_USER_PERMISSION) \
     X(REQUESTING_ACCESS_TOKEN) X(AUTHENTICATING_WITH_ACCESS_TOKEN) \
-    X(REQUESTING_VOICE_STATE) X(READY) X(CONNECTION_FAILED) \
-    X(AUTHENTICATION_FAILED) X(DISCONNECTED)
+    X(REQUESTING_VOICE_STATE) X(WAITING_FOR_INITIAL_DATA) X(READY) \
+    X(CONNECTION_FAILED) X(AUTHENTICATION_FAILED) X(DISCONNECTED)
 
   enum class RpcState {
 #define X(y) y,
@@ -135,6 +135,7 @@ class DiscordClient {
   std::shared_ptr<bool> mRunning;
   std::map<std::string, AwaitablePromise<nlohmann::json>> mPromises;
   std::map<std::string, std::vector<std::function<void(const nlohmann::json&)>>> mSubscriptions;
+  std::vector<AwaitablePromise<void>> mInitPromises;
 
   template<typename TRet, typename TArgs>
   asio::awaitable<TRet> commandImpl(const char* command, const TArgs& args);

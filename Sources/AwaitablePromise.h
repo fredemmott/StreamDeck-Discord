@@ -9,36 +9,58 @@
 #include <asio.hpp>
 
 template<typename T>
-struct AwaitablePromise {
+struct AwaitablePromiseBase {
   public:
-    AwaitablePromise(
+    AwaitablePromiseBase(
       asio::io_context& ctx
-    ): p(
-      new Impl {
-        .timer = asio::steady_timer(ctx, std::chrono::steady_clock::time_point::max()),
-      }
+    ): mTimer(
+      new asio::steady_timer(
+        ctx,
+        std::chrono::steady_clock::time_point::max()
+      )
     ) {
     }
 
-    void resolve(T data) noexcept {
-      p->data = data;
-      p->timer.cancel();
-    }
-
-    asio::awaitable<T> async_wait() {
+    asio::awaitable<void> async_wait() {
       asio::error_code ec;
-      co_await p->timer.async_wait(asio::redirect_error(asio::use_awaitable, ec));
+      co_await mTimer->async_wait(asio::redirect_error(asio::use_awaitable, ec));
       assert(ec == asio::error::operation_aborted);
-      co_return result();
     }
 
-    T result() const {
-      return p->data;
+  protected:
+    void resolve() noexcept {
+      mTimer->cancel();
     }
+
   private:
-    struct Impl {
-      asio::steady_timer timer;
-      T data;
-    };
-    std::shared_ptr<Impl> p;
+    std::shared_ptr<asio::steady_timer> mTimer;
+};
+
+template<class T>
+struct AwaitablePromise : public AwaitablePromiseBase<T> {
+  AwaitablePromise(
+    asio::io_context& ctx
+  ) : AwaitablePromiseBase(ctx), mData(std::make_shared<T>()) {
+  }
+
+  void resolve(T data) noexcept {
+    *mData = data;
+    AwaitablePromiseBase<T>::resolve();
+  }
+
+  T result() const {
+    return *mData;
+  }
+
+  asio::awaitable<T> async_wait() {
+    co_await AwaitablePromiseBase<T>::async_wait();
+    co_return result();
+  }
+  private:
+    std::shared_ptr<T> mData;
+};
+
+template<>
+struct AwaitablePromise<void> : public AwaitablePromiseBase<void> {
+  using AwaitablePromiseBase<void>::resolve;
 };

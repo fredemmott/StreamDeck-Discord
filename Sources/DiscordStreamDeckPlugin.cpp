@@ -156,6 +156,10 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
       mConnectionManager->SendToPropertyInspector(
         action->GetActionID(), ctx, piPayload);
     }
+    for (const auto& [ctx, action] : mV2Actions) {
+      mConnectionManager->SendToPropertyInspector(
+        action->GetActionID(), ctx, piPayload);
+    }
   }
 
   mClient = std::make_shared<DiscordClient>(
@@ -180,12 +184,19 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
         mConnectionManager->SendToPropertyInspector(
           action->GetActionID(), ctx, piPayload);
       }
+      for (const auto& [ctx, action] : mV2Actions) {
+        mConnectionManager->SendToPropertyInspector(
+          action->GetActionID(), ctx, piPayload);
+      }
     }
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY: {
         std::scoped_lock lock(mActionsMutex);
         for (const auto& [_ctx, action] : mActions) {
           action->DiscordStateDidChange(mClient, state);
+        }
+        for (const auto& [_ctx, action] : mV2Actions) {
+          action->SetDiscordClient(mClient);
         }
       }
         return;
@@ -200,6 +211,9 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
         for (const auto& [ctx, _action] : mActions) {
           mConnectionManager->ShowAlertForContext(ctx);
         }
+        for (const auto& [ctx, _action] : mV2Actions) {
+          mConnectionManager->ShowAlertForContext(ctx);
+        }
         return;
       }
     }
@@ -211,6 +225,10 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     std::scoped_lock lock(mActionsMutex);
     for (const auto& [ctx, action] : mActions) {
       action->DiscordStateDidChange(mClient, state);
+      mConnectionManager->ShowOKForContext(ctx);
+    }
+    for (const auto& [ctx, action] : mV2Actions) {
+      action->SetDiscordClient(mClient);
       mConnectionManager->ShowOKForContext(ctx);
     }
   });
@@ -285,6 +303,10 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   if (it != mActions.end()) {
     return it->second;
   }
+  auto itV2 = mV2Actions.find(context);
+  if (itV2 != mV2Actions.end()) {
+    return itV2->second;
+  }
 
   if (action == SelfMuteToggleAction::ACTION_ID) {
     auto impl = std::make_shared<SelfMuteToggleAction>(
@@ -310,7 +332,7 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   if (action == DeafenToggleAction::ACTION_ID) {
     auto impl = std::make_shared<DeafenToggleAction>(
       mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
+    mV2Actions.emplace(context, impl);
     return impl;
   }
 

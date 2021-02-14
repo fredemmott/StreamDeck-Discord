@@ -306,7 +306,18 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
   if (command == "GET_VOICE_SETTINGS" || event == "VOICE_SETTINGS_UPDATE") {
     if (data) {
       if (mState.rpcState == RpcState::REQUESTING_VOICE_STATE) {
-        setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::READY);
+        setRpcState(RpcState::REQUESTING_VOICE_STATE, RpcState::WAITING_FOR_INITIAL_DATA);
+        asio::co_spawn(
+          *mIOContext,
+          [this]() -> asio::awaitable<void> {
+            ESDDebug("Waiting for init promises");
+            for (auto& p: mInitPromises) {
+              co_await p.async_wait();
+            }
+            setRpcState(RpcState::WAITING_FOR_INITIAL_DATA, RpcState::READY);
+          },
+          asio::detached
+        );
       }
       const auto response = data->get<VoiceSettingsResponse>();
       mState.isMuted = response.mute;
@@ -424,9 +435,15 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
     target = std::make_unique<TPubSub>();
   }
 
+  AwaitablePromise<void> p(*mIOContext);
+  mInitPromises.push_back(p);
+
   mSubscriptions[event].push_back(
-    [&target](const nlohmann::json& data) {
+    [p, &target](const nlohmann::json& data) mutable {
+      ESDDebug("Received sub data");
       target->set(data);
+      p.resolve();
+      ESDDebug("Resolved promise");
     }
   );
   nlohmann::json sub {

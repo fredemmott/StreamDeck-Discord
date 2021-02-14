@@ -2,6 +2,7 @@ set(
   SOURCES
   DiscordClient.cpp
   DiscordESDAction.cpp
+  DiscordESDActionV2.cpp
   DiscordESDActionIDs.cpp
   DiscordStreamDeckPlugin.cpp
   main.cpp
