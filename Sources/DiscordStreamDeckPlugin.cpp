@@ -278,76 +278,29 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
     return it->second;
   }
 
-  if (action == SelfMuteToggleAction::ACTION_ID) {
-    auto impl = std::make_shared<SelfMuteToggleAction>(
-      mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
+#define A(T) \
+  if (action == T ## ::ACTION_ID) { \
+    auto impl = std::make_shared<T>( \
+      mConnectionManager, context, mClient); \
+    mActions.emplace(context, impl); \
+    return impl; \
   }
 
-  if (action == SelfMuteOnAction::ACTION_ID) {
-    auto impl = std::make_shared<SelfMuteOnAction>(
-      mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
+  A(SelfMuteToggleAction);
+  A(SelfMuteOnAction);
+  A(SelfMuteOffAction);
 
-  if (action == SelfMuteOffAction::ACTION_ID) {
-    auto impl = std::make_shared<SelfMuteOffAction>(
-      mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
+  A(DeafenToggleAction);
+  A(DeafenOnAction);
+  A(DeafenOffAction);
 
-  if (action == DeafenToggleAction::ACTION_ID) {
-    auto impl = std::make_shared<DeafenToggleAction>(
-      mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
+  A(PTTToggleAction);
+  A(PTTOnAction);
+  A(PTTOffAction);
 
-  if (action == DeafenOnAction::ACTION_ID) {
-    auto impl
-      = std::make_shared<DeafenOnAction>(mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
+  A(HangupAction);
 
-  if (action == DeafenOffAction::ACTION_ID) {
-    auto impl
-      = std::make_shared<DeafenOffAction>(mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
-
-  if (action == PTTToggleAction::ACTION_ID) {
-    auto impl = std::make_shared<PTTToggleAction>(
-      mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
-
-  if (action == PTTOnAction::ACTION_ID) {
-    auto impl
-      = std::make_shared<PTTOnAction>(mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
-
-  if (action == PTTOffAction::ACTION_ID) {
-    auto impl
-      = std::make_shared<PTTOffAction>(mConnectionManager, context, mClient);
-    mActions.emplace(context, impl);
-    return impl;
-  }
-
-	if (action == HangupAction::ACTION_ID) {
-		auto impl
-			= std::make_shared<HangupAction>(mConnectionManager, context, mClient);
-		mActions.emplace(context, impl);
-		return impl;
-	}
-
+#undef A
 
   return nullptr;
 }
