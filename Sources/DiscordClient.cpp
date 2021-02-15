@@ -323,12 +323,9 @@ void DiscordClient::setIsDeafened(bool deaf) {
 }
 
 void DiscordClient::setIsPTT(bool isPTT) {
-  json mode;
-  mode["type"] = (isPTT) ? "PUSH_TO_TALK" : "VOICE_ACTIVITY";
-  json args;
-  args["mode"] = mode;
-  mConnection->Write(
-    {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
+  callAndForget("SET_VOICE_SETTINGS", {
+    { "mode", { { "type", (isPTT) ? "PUSH_TO_TALK" : "VOICE_ACTIVITY" } } },
+  });
 }
 
 void DiscordClient::callAndForget(const char* command, const nlohmann::json& args) {
