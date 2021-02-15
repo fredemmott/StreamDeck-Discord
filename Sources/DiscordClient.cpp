@@ -165,6 +165,8 @@ asio::awaitable<void> DiscordClient::initialize() {
     }
   };
 
+  ESDLog("Opened connection to Discord, starting authentication");
+
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
     mConnection->Write(
@@ -281,6 +283,9 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
       startAuthenticationWithNewAccessToken();
       return true;
     }
+
+    ESDLog("Authenticated/authorized, setting up subscriptions");
+
     setRpcState(
       RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN,
       RpcState::WAITING_FOR_INITIAL_DATA);
@@ -298,7 +303,7 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
         };
       }
     );
-    ESDLog("Sent subscription events");
+    ESDLog("Sent subscription requests");
 
     asio::co_spawn(
       *mIOContext,
@@ -425,14 +430,22 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
 
   auto resolve_on_dispatch = initial_fetch == std::nullopt;
 
+  std::string event_copy(event);
+
   mSubscriptions[event].push_back(
-    [resolve_on_dispatch, p, &target](const nlohmann::json& data) mutable {
-      ESDDebug("Received sub data");
-      target->set(data.get<typename TPubSub::Data>());
+    [event_copy, resolve_on_dispatch, p, &target](const nlohmann::json& data) mutable {
+      ESDLog("{}: ----- received event -----", event_copy);
+      auto converted = data.get<typename TPubSub::Data>();
+      ESDLog("> {}: {}", event_copy, nlohmann::json(converted).dump());
+
+      target->set(converted);
+
       if (resolve_on_dispatch) {
         p.resolve();
+        ESDDebug("Resolved promise");
       }
-      ESDDebug("Resolved promise");
+
+      ESDLog("> {}: ----- done -----", event_copy);
     }
   );
   nlohmann::json sub {

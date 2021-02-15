@@ -80,6 +80,7 @@ void DiscordStreamDeckPlugin::WillAppearForAction(
     mHaveRequestedGlobalSettings = true;
     mConnectionManager->GetGlobalSettings();
   }
+  ESDLog("Action will appear: {} {}", inAction, inContext);
   ESDPlugin::WillAppearForAction(inAction, inContext, inPayload, inDeviceID);
 }
 
@@ -136,7 +137,7 @@ void DiscordStreamDeckPlugin::ReconnectToDiscord() {
 }
 
 void DiscordStreamDeckPlugin::ConnectToDiscord() {
-  ESDDebug("Connecting to discord");
+  ESDDebug("Connecting to Discord");
   if (mClient) {
     auto state = mClient->getState();
     if (state.rpcState == DiscordClient::RpcState::CONNECTING || state.rpcState == DiscordClient::RpcState::READY) {
@@ -160,15 +161,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
 
   mClient = std::make_shared<DiscordClient>(
     mConnectionManager->GetAsioContext(), creds.appId, creds.appSecret, credentials);
-  ESDDebug("Created client, registering calbacks");
   mClient->onStateChanged([=](DiscordClient::State state) {
-    std::stringstream logMessage;
-    logMessage << "Discord state change: "
-               << "rpcState = "
-               << DiscordClient::getRpcStateName(state.rpcState);
-
-    mConnectionManager->LogMessage(logMessage.str());
-
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID},
              {"state", DiscordClient::getRpcStateName(state.rpcState)}};
@@ -189,6 +182,8 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
         ConnectToDiscordLater();
         return;
       case DiscordClient::RpcState::DISCONNECTED:
+        ESDLog("Disconnected from Discord");
+        mClient.reset();
         ConnectToDiscordLater();
         // fallthrough
       case DiscordClient::RpcState::AUTHENTICATION_FAILED: {
@@ -201,7 +196,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     return;
   });
   mClient->onReady([=](DiscordClient::State state) {
-    ESDDebug("Client ready");
+    ESDLog("Discord client ready");
     for (const auto& [ctx, action] : mActions) {
       action->SetDiscordClient(mClient);
       mConnectionManager->ShowOKForContext(ctx);
@@ -214,11 +209,11 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     mCredentials.appSecret = mClient->getAppSecret();
     mCredentials.oauthToken = credentials.accessToken;
     mCredentials.refreshToken = credentials.refreshToken;
-    std::stringstream logMessage;
-    logMessage << "Got new credentials for app id" << mCredentials.appId
-               << " - with oauth token = "
-               << (mCredentials.oauthToken.empty() ? "no" : "yes");
-    mConnectionManager->LogMessage(logMessage.str());
+    ESDLog(
+      "Got new credentials for app id {} {} an oauth token",
+      mCredentials.appId,
+      mCredentials.oauthToken.empty() ? "without" : "with"
+    );
     mConnectionManager->SetGlobalSettings(mCredentials.toJSON());
   });
   ESDDebug("Initializing");
