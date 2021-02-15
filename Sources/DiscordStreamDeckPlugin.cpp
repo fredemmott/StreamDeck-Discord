@@ -57,7 +57,7 @@ void DiscordStreamDeckPlugin::KeyUpForAction(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  mConnectionManager->LogMessage("Key Up: " + inAction + " " + inContext);
+  ESDLog("Key Up: {} {}", inAction, inContext);
   if (!mClient) {
     return;
   }
@@ -104,9 +104,9 @@ void DiscordStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
-  ESDDebug("Received plugin request: {}", inPayload.dump());
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
-  mConnectionManager->LogMessage("Property inspector event: " + event);
+  ESDLog("PI event: {}", event);
+  ESDDebug("PI data: {}" inPayload.dump());
 
   if (event == REAUTHENTICATE_PI_ACTION_ID) {
     mCredentials.oauthToken.clear();
