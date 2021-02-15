@@ -2,7 +2,12 @@
 
 # StreamDeck-Discord
 
-StreamDeck-Discord is a C++ plugin for the Elgato StreamDeck for controlling self-mute and self-deafen in the Discord app.
+StreamDeck-Discord is a C++ plugin for the Elgato StreamDeck for controlling the Discord application running on your computer.
+
+# Features
+
+- Toggle/enable/disable self-mute/deafen
+- Switch between voice-activation and push-to-talk
 
 # Installation
 
