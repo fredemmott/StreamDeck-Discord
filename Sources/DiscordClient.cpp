@@ -290,7 +290,6 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
         };
       }
     );
-    callAndForget("GET_SELECTED_VOICE_CHANNEL", {});
 
     asio::co_spawn(
       *mIOContext,
