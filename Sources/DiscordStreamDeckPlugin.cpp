@@ -106,7 +106,7 @@ void DiscordStreamDeckPlugin::SendToPlugin(
   const std::string& inDeviceID) {
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   ESDLog("PI event: {}", event);
-  ESDDebug("PI data: {}" inPayload.dump());
+  ESDDebug("PI data: {}", inPayload.dump());
 
   if (event == REAUTHENTICATE_PI_ACTION_ID) {
     mCredentials.oauthToken.clear();
