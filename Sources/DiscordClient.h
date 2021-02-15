@@ -42,6 +42,20 @@ namespace DiscordPayloads {
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     VoiceChannelSelect, channel_id
   );
+
+  struct Guild {
+    std::string id;
+    std::string name;
+    // Not currently including the icon:
+    // std::optional is only supported for nullable, not optional json fields
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Guild, id, name);
+  typedef Guild Server;
+
+  struct GetGuildsResponse {
+    std::vector<Guild> guilds;
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GetGuildsResponse, guilds);
 }
 
 template<class T>
@@ -105,6 +119,9 @@ class DiscordClient {
   void setIsPTT(bool);
   void setCurrentVoiceChannel(const std::string& channel_id);
 
+  asio::awaitable<std::vector<DiscordPayloads::Guild>> coGetGuilds();
+  inline auto coGetServers() { return coGetGuilds(); }
+
   // Easy mode...
   void initializeInCurrentThread();
 
@@ -153,7 +170,7 @@ class DiscordClient {
 
   void callAndForget(const char* func, const nlohmann::json& args);
   template<typename TRet, typename TArgs>
-  asio::awaitable<TRet> commandImpl(const char* command, const TArgs& args);
+  asio::awaitable<TRet> commandImpl(const char* command, TArgs args);
 
   template<typename TPubSub>
   void subscribeImpl(const char* event, std::unique_ptr<TPubSub>&,

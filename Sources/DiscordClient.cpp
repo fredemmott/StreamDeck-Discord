@@ -99,6 +99,11 @@ DiscordClient::~DiscordClient() {
   }
 }
 
+asio::awaitable<std::vector<Guild>> DiscordClient::coGetGuilds() {
+  const auto data = co_await commandImpl<GetGuildsResponse>("GET_GUILDS", nlohmann::json {});
+  co_return data.guilds;
+}
+
 void DiscordClient::initializeInCurrentThread() {
   assert(!mWorker.valid());
   const auto running = mRunning;
@@ -198,15 +203,12 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
     // Command response
     // TODO: error handling
     const auto nonce = *parsed.nonce;
-    ESDDebug("Nonce: {}", nonce);
     auto promise = mPromises.find(nonce);
     if (promise != mPromises.end()) {
-      ESDDebug("Found promise");
       promise->second.resolve(message["data"]);
       mPromises.erase(nonce);
       return true;
     }
-    ESDDebug("No promise");
   }
 
   const auto command = parsed.cmd;
@@ -284,7 +286,6 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
         if (result.is_null()) {
           co_return CurrentVoiceChannel::Data { .channel_id = std::nullopt };
         }
-        ESDDebug("selected voice chanel {}", result.dump());
         co_return CurrentVoiceChannel::Data {
           .channel_id = result.at("id").get<std::string>()
         };
@@ -299,6 +300,10 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
           co_await p.async_wait();
         }
         setRpcState(RpcState::WAITING_FOR_INITIAL_DATA, RpcState::READY);
+        ESDDebug("Requesting servers");
+        auto servers = co_await coGetServers();
+        ESDDebug("Got servers");
+        ESDDebug("Servers: {}", nlohmann::json(servers).dump());
       },
       asio::detached
     );
@@ -379,7 +384,7 @@ void DiscordClient::setRpcState(RpcState oldState, RpcState newState) {
 }
 
 template<typename TRet, typename TArgs>
-asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArgs& args) {
+asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, TArgs args) {
   auto nonce = getNextNonce();
   nlohmann::json request {
     { "cmd", command },
@@ -389,7 +394,9 @@ asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArg
   AwaitablePromise<nlohmann::json> p(*mIOContext);
   mPromises.emplace(nonce, p);
   mConnection->Write(request);
-  const auto json_response = co_await p.async_wait();
+  const nlohmann::json json_response = co_await p.async_wait();
+  ESDDebug("Finished waiting for command promise");
+  ESDDebug("Response: {}", json_response.dump());
   co_return json_response;
 }
 
