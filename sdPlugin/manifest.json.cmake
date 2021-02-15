@@ -134,7 +134,23 @@
       "Name": "Push-To-Talk Mode",
       "Tooltip": "Set Voice-Activated off)",
       "UUID": "com.fredemmott.discord.ptton"
-    }
+    },
+		{
+			"Icon": "discord-ptt",
+			"States": [
+				{
+					"Image": "discord-ptt"
+				},
+				{
+					"Image": "discord-va"
+				}
+			],
+			"SupportedInMultiActions": true,
+			"Name": "Hangup",
+			"Tooltip": "Disconnect from the current voice channel",
+			"UUID": "com.fredemmott.discord.hangup"
+		}
+
   ],
   "Author": "Fred Emmott",
   "CodePathMac": "sddiscord",

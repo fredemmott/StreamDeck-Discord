@@ -282,12 +282,11 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
       [this]() -> asio::awaitable<CurrentVoiceChannel::Data> {
         auto result = co_await commandImpl<nlohmann::json>("GET_SELECTED_VOICE_CHANNEL", nlohmann::json {});
         if (result.is_null()) {
-          co_return CurrentVoiceChannel::Data { .channel_id = std::nullopt, .guild_id = std::nullopt };
+          co_return CurrentVoiceChannel::Data { .channel_id = std::nullopt };
         }
         ESDDebug("selected voice chanel {}", result.dump());
         co_return CurrentVoiceChannel::Data {
-          .channel_id = result.at("id").get<std::string>(),
-          .guild_id = result.at("guild_id").get<std::optional<std::string>>(),
+          .channel_id = result.at("id").get<std::string>()
         };
       }
     );
@@ -345,6 +344,12 @@ void DiscordClient::setIsDeafened(bool deaf) {
 void DiscordClient::setIsPTT(bool isPTT) {
   callAndForget("SET_VOICE_SETTINGS", {
     { "mode", { { "type", (isPTT) ? "PUSH_TO_TALK" : "VOICE_ACTIVITY" } } },
+  });
+}
+
+void DiscordClient::setCurrentVoiceChannel(const std::string& id) {
+  callAndForget("SELECT_VOICE_CHANNEL", {
+    { "channel_id", id.empty() ? std::nullopt : std::optional(std::string(id)) }
   });
 }
 

@@ -38,10 +38,9 @@ namespace DiscordPayloads {
   );
   struct VoiceChannelSelect {
     std::optional<std::string> channel_id;
-    std::optional<std::string> guild_id;
   };
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    VoiceChannelSelect, channel_id, guild_id
+    VoiceChannelSelect, channel_id
   );
 }
 
@@ -104,6 +103,7 @@ class DiscordClient {
   void setIsMuted(bool);
   void setIsDeafened(bool);
   void setIsPTT(bool);
+  void setCurrentVoiceChannel(const std::string& channel_id);
 
   // Easy mode...
   void initializeInCurrentThread();

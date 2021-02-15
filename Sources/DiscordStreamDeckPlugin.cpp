@@ -21,6 +21,7 @@ LICENSE file.
 #include "DeafenOnAction.h"
 #include "DeafenToggleAction.h"
 #include "DiscordClient.h"
+#include "HangupAction.h"
 #include "SelfMuteOffAction.h"
 #include "SelfMuteOnAction.h"
 #include "SelfMuteToggleAction.h"
@@ -345,6 +346,14 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
     mActions.emplace(context, impl);
     return impl;
   }
+
+	if (action == HangupAction::ACTION_ID) {
+		auto impl
+			= std::make_shared<HangupAction>(mConnectionManager, context, mClient);
+		mActions.emplace(context, impl);
+		return impl;
+	}
+
 
   return nullptr;
 }
