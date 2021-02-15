@@ -152,7 +152,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
   {
     const auto piPayload
       = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
-    std::scoped_lock lock(mActionsMutex);
     for (const auto& [ctx, action] : mActions) {
       mConnectionManager->SendToPropertyInspector(
         action->GetActionID(), ctx, piPayload);
@@ -174,7 +173,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
       = json{{"event", STATE_PI_EVENT_ID},
              {"state", DiscordClient::getRpcStateName(state.rpcState)}};
     {
-      std::scoped_lock lock(mActionsMutex);
       for (const auto& [ctx, action] : mActions) {
         mConnectionManager->SendToPropertyInspector(
           action->GetActionID(), ctx, piPayload);
@@ -182,7 +180,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     }
     switch (state.rpcState) {
       case DiscordClient::RpcState::READY: {
-        std::scoped_lock lock(mActionsMutex);
         for (const auto& [_ctx, action] : mActions) {
           action->SetDiscordClient(mClient);
         }
@@ -195,7 +192,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
         ConnectToDiscordLater();
         // fallthrough
       case DiscordClient::RpcState::AUTHENTICATION_FAILED: {
-        std::scoped_lock lock(mActionsMutex);
         for (const auto& [ctx, _action] : mActions) {
           mConnectionManager->ShowAlertForContext(ctx);
         }
@@ -206,7 +202,6 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
   });
   mClient->onReady([=](DiscordClient::State state) {
     ESDDebug("Client ready");
-    std::scoped_lock lock(mActionsMutex);
     for (const auto& [ctx, action] : mActions) {
       action->SetDiscordClient(mClient);
       mConnectionManager->ShowOKForContext(ctx);
@@ -278,7 +273,6 @@ json DiscordStreamDeckPlugin::Credentials::toJSON() const {
 std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   const std::string& action,
   const std::string& context) {
-  std::scoped_lock lock(mActionsMutex);
   auto it = mActions.find(context);
   if (it != mActions.end()) {
     return it->second;

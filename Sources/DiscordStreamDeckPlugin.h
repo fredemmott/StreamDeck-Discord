@@ -17,7 +17,6 @@ LICENSE file.
 using json = nlohmann::json;
 
 #include <map>
-#include <mutex>
 
 #include "DiscordESDAction.h"
 
@@ -56,7 +55,6 @@ class DiscordStreamDeckPlugin : public ESDPlugin {
   virtual std::shared_ptr<ESDAction> GetOrCreateAction(const std::string& action, const std::string& context) override final;
 
  private:
-  std::mutex mActionsMutex;
   std::map<std::string, std::shared_ptr<DiscordESDAction>> mActions;
 
   struct Credentials {
