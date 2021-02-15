@@ -48,6 +48,10 @@ class DiscordClient::VoiceSettingsImpl final : public PubSubDataImpl<DiscordPayl
 DiscordClient::VoiceSettings& DiscordClient::getVoiceSettings() const {
   return *mVoiceSettings.get();
 }
+class DiscordClient::CurrentVoiceChannelImpl final : public PubSubDataImpl<DiscordPayloads::VoiceChannelSelect> {};
+DiscordClient::CurrentVoiceChannel& DiscordClient::getCurrentVoiceChannel() const {
+  return *mCurrentVoiceChannel.get();
+}
 
 const char* DiscordClient::getRpcStateName(RpcState state) {
   switch (state) {
@@ -272,6 +276,22 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
       RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN,
       RpcState::WAITING_FOR_INITIAL_DATA);
     subscribeImpl("VOICE_SETTINGS_UPDATE", mVoiceSettings);
+    subscribeImpl(
+      "VOICE_CHANNEL_SELECT",
+      mCurrentVoiceChannel,
+      [this]() -> asio::awaitable<CurrentVoiceChannel::Data> {
+        auto result = co_await commandImpl<nlohmann::json>("GET_SELECTED_VOICE_CHANNEL", nlohmann::json {});
+        if (result.is_null()) {
+          co_return CurrentVoiceChannel::Data { .channel_id = std::nullopt, .guild_id = std::nullopt };
+        }
+        ESDDebug("selected voice chanel {}", result.dump());
+        co_return CurrentVoiceChannel::Data {
+          .channel_id = result.at("id").get<std::string>(),
+          .guild_id = result.at("guild_id").get<std::optional<std::string>>(),
+        };
+      }
+    );
+    callAndForget("GET_SELECTED_VOICE_CHANNEL", {});
 
     asio::co_spawn(
       *mIOContext,
@@ -370,7 +390,10 @@ asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, const TArg
 }
 
 template<typename TPubSub>
-void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& target) {
+void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& target,
+  std::optional<
+    std::function<asio::awaitable<typename TPubSub::Data>()>
+   > initial_fetch) {
   if (!target) {
     target = std::make_unique<TPubSub>();
   }
@@ -378,11 +401,15 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
   AwaitablePromise<void> p(*mIOContext);
   mInitPromises.push_back(p);
 
+  auto resolve_on_dispatch = initial_fetch == std::nullopt;
+
   mSubscriptions[event].push_back(
-    [p, &target](const nlohmann::json& data) mutable {
+    [resolve_on_dispatch, p, &target](const nlohmann::json& data) mutable {
       ESDDebug("Received sub data");
       target->set(data);
-      p.resolve();
+      if (resolve_on_dispatch) {
+        p.resolve();
+      }
       ESDDebug("Resolved promise");
     }
   );
@@ -394,4 +421,18 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
   ESDDebug("Sending sub {}", sub.dump());
   mConnection->Write(sub);
   ESDDebug("Sent sub");
+
+  if (resolve_on_dispatch) {
+    return;
+  }
+
+  asio::co_spawn(
+    *mIOContext,
+    [=, &target]() mutable -> asio::awaitable<void> {
+      auto data = co_await (*initial_fetch)();
+      target->set(data);
+      p.resolve();
+    },
+    asio::detached
+  );
 }

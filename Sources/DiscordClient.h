@@ -36,6 +36,13 @@ namespace DiscordPayloads {
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     VoiceSettingsResponse, deaf, mute, mode
   );
+  struct VoiceChannelSelect {
+    std::optional<std::string> channel_id;
+    std::optional<std::string> guild_id;
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    VoiceChannelSelect, channel_id, guild_id
+  );
 }
 
 template<class T>
@@ -107,11 +114,16 @@ class DiscordClient {
   typedef PubSubData<DiscordPayloads::VoiceSettingsResponse> VoiceSettings;
   VoiceSettings& getVoiceSettings() const;
 
+  typedef PubSubData<DiscordPayloads::VoiceChannelSelect> CurrentVoiceChannel;
+  CurrentVoiceChannel& getCurrentVoiceChannel() const;
+
  private:
   asio::awaitable<void> initialize();
 
   class VoiceSettingsImpl;
   std::unique_ptr<VoiceSettingsImpl> mVoiceSettings;
+  class CurrentVoiceChannelImpl;
+  std::unique_ptr<CurrentVoiceChannelImpl> mCurrentVoiceChannel;
 
   std::unique_ptr<RpcConnection> mConnection;
   State mState;
@@ -142,6 +154,11 @@ class DiscordClient {
   void callAndForget(const char* func, const nlohmann::json& args);
   template<typename TRet, typename TArgs>
   asio::awaitable<TRet> commandImpl(const char* command, const TArgs& args);
+
   template<typename TPubSub>
-  void subscribeImpl(const char* event, std::unique_ptr<TPubSub>&);
+  void subscribeImpl(const char* event, std::unique_ptr<TPubSub>&,
+    std::optional<
+      std::function<asio::awaitable<typename TPubSub::Data>()>
+    > init = std::nullopt
+  );
 };
