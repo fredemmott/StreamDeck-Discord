@@ -1,62 +1,15 @@
 #pragma once
 
 #include "AwaitablePromise.h"
-#include "json_ext.h"
+#include "DiscordPayloads.h"
 
 #include <asio.hpp>
-#include <nlohmann/json.hpp>
 
 #include <functional>
 #include <string>
 #include <map>
 
 class RpcConnection;
-
-namespace DiscordPayloads {
-  enum class VoiceSettingsModeType {
-    PUSH_TO_TALK,
-    VOICE_ACTIVITY,
-  };
-  NLOHMANN_JSON_SERIALIZE_ENUM(
-    VoiceSettingsModeType, {
-    { VoiceSettingsModeType::PUSH_TO_TALK, "PUSH_TO_TALK" },
-    { VoiceSettingsModeType::VOICE_ACTIVITY, "VOICE_ACTIVITY" },
-  });
-  struct VoiceSettingsMode {
-    VoiceSettingsModeType type;
-  };
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    VoiceSettingsMode, type
-  );
-  struct VoiceSettingsResponse {
-    bool deaf;
-    bool mute;
-    VoiceSettingsMode mode;
-  };
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    VoiceSettingsResponse, deaf, mute, mode
-  );
-  struct VoiceChannelSelect {
-    std::optional<std::string> channel_id;
-  };
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    VoiceChannelSelect, channel_id
-  );
-
-  struct Guild {
-    std::string id;
-    std::string name;
-    // Not currently including the icon:
-    // std::optional is only supported for nullable, not optional json fields
-  };
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Guild, id, name);
-  typedef Guild Server;
-
-  struct GetGuildsResponse {
-    std::vector<Guild> guilds;
-  };
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GetGuildsResponse, guilds);
-}
 
 template<class T>
 class PubSubData {

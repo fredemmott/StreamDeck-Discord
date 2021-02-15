@@ -3,8 +3,9 @@ set(
   DiscordClient.cpp
   DiscordESDAction.cpp
   DiscordESDActionIDs.cpp
-  DiscordVoiceSettingsAction.cpp
+  DiscordPayloads.cpp
   DiscordStreamDeckPlugin.cpp
+  DiscordVoiceSettingsAction.cpp
   main.cpp
 )
 if (APPLE)
