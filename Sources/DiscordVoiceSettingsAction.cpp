@@ -7,6 +7,7 @@ int DiscordVoiceSettingsAction::GetDesiredState(const DiscordClient& client) {
 }
 
 void DiscordVoiceSettingsAction::Reconnected(DiscordClient& client) {
+  auto state = client.getState();
   client.getVoiceSettings().subscribe(
     [this](const auto& settings) {
       GetESD()->SetState(

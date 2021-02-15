@@ -13,8 +13,10 @@ DiscordESDAction::DiscordESDAction(
   ESDConnectionManager* esd,
   const std::string& context,
   std::shared_ptr<DiscordClient> discordClient)
-  : ESDAction(esd, context), mDiscordClient(discordClient) {
-    SetDiscordClient(discordClient);
+  : ESDAction(esd, context) {
+  if (discordClient && discordClient->getState().rpcState == DiscordClient::RpcState::READY) {
+    asio::post([=]() { SetDiscordClient(discordClient); });
+  }
 }
 
 void DiscordESDAction::WillAppear(const nlohmann::json&) {
@@ -45,8 +47,6 @@ void DiscordESDAction::SetDiscordClient(
     GetESD()->ShowAlertForContext(GetContext());
     return;
   }
-  ESDDebug("Got new client");
   Reconnected(*client);
   GetESD()->SetState(GetDesiredState(*client), GetContext());
-  ESDDebug("Set initial state");
 }
