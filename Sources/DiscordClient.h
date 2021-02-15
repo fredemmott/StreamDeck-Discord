@@ -75,6 +75,10 @@ class DiscordClient {
   asio::awaitable<std::vector<DiscordPayloads::Guild>> coGetGuilds();
   inline auto coGetServers() { return coGetGuilds(); }
 
+  asio::awaitable<std::vector<DiscordPayloads::Channel>> coGetChannels(
+    const std::string& guild_id
+  );
+
   // Easy mode...
   void initializeInCurrentThread();
 

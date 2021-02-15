@@ -206,6 +206,22 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
       action->SetDiscordClient(mClient);
       mConnectionManager->ShowOKForContext(ctx);
     }
+    asio::co_spawn(
+      *mConnectionManager->GetAsioContext(),
+      [this]() -> asio::awaitable<void> {
+				ESDDebug("Requesting servers");
+				auto servers = co_await mClient->coGetServers();
+				ESDDebug("Got servers");
+        for (const auto& server : servers) {
+          ESDDebug("--- Server: {} ---", server.name);
+          auto channels = co_await mClient->coGetChannels(server.id);
+          for (const auto& channel : channels) {
+            ESDDebug("- {}", nlohmann::json(channel).dump());
+          }
+        }
+      },
+      asio::detached
+    );
   });
   mClient->onCredentialsChanged([=](DiscordClient::Credentials credentials) {
     // Copy these in case we're migrating from legacy credentials (per-action)

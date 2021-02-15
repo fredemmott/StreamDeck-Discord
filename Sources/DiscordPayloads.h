@@ -3,6 +3,9 @@
 #include <nlohmann/json.hpp>
 #include "json_ext.h"
 
+// Custom to_json/from_json are used when an std::optional field
+// can be entirely missing from the json, not just set to null
+
 namespace DiscordPayloads {
 	enum class VoiceSettingsModeType {
 		PUSH_TO_TALK,
@@ -37,10 +40,10 @@ namespace DiscordPayloads {
 	struct Guild {
 		std::string id;
 		std::string name;
-		// Not currently including the icon:
-		// std::optional is only supported for nullable, not optional json fields
+    std::optional<std::string> icon_url;
 	};
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Guild, id, name);
+	void to_json(nlohmann::json& j, const Guild& c);
+	void from_json(const nlohmann::json& j, Guild& c);
 	typedef Guild Server;
 
 	struct GetGuildsResponse {
@@ -70,8 +73,13 @@ namespace DiscordPayloads {
 		ChannelType type;
 		std::optional<std::string> guild_id;
 		std::optional<std::string> name;
+    std::optional<std::string> parent_id;
 	};
-	// need to handle missing, not just null fields
 	void to_json(nlohmann::json& j, const Channel& c);
 	void from_json(const nlohmann::json& j, Channel& c);
+
+  struct GetChannelsResponse {
+    std::vector<Channel> channels;
+  };
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GetChannelsResponse, channels);
 }

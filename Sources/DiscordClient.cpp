@@ -104,6 +104,13 @@ asio::awaitable<std::vector<Guild>> DiscordClient::coGetGuilds() {
   co_return data.guilds;
 }
 
+asio::awaitable<std::vector<Channel>> DiscordClient::coGetChannels(
+  const std::string& guild_id
+) {
+  const auto data = co_await commandImpl<GetChannelsResponse>("GET_CHANNELS", nlohmann::json { {"guild_id", guild_id  }});
+  co_return data.channels;
+}
+
 void DiscordClient::initializeInCurrentThread() {
   assert(!mWorker.valid());
   const auto running = mRunning;
@@ -300,10 +307,6 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
           co_await p.async_wait();
         }
         setRpcState(RpcState::WAITING_FOR_INITIAL_DATA, RpcState::READY);
-        ESDDebug("Requesting servers");
-        auto servers = co_await coGetServers();
-        ESDDebug("Got servers");
-        ESDDebug("Servers: {}", nlohmann::json(servers).dump());
       },
       asio::detached
     );
