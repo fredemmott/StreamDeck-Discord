@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AwaitablePromise.h"
+#include "json_ext.h"
 
 #include <asio.hpp>
 #include <nlohmann/json.hpp>
@@ -138,6 +139,7 @@ class DiscordClient {
   std::map<std::string, std::vector<std::function<void(const nlohmann::json&)>>> mSubscriptions;
   std::vector<AwaitablePromise<void>> mInitPromises;
 
+  void callAndForget(const char* func, const nlohmann::json& args);
   template<typename TRet, typename TArgs>
   asio::awaitable<TRet> commandImpl(const char* command, const TArgs& args);
   template<typename TPubSub>

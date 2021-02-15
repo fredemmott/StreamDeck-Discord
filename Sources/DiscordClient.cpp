@@ -177,29 +177,6 @@ void DiscordClient::startAuthenticationWithNewAccessToken() {
      {"args", {"access_token", mCredentials.accessToken}}});
 }
 
-// Should be unneeded in a later release of nlohmann/json
-// https://github.com/nlohmann/json/pull/2117
-namespace nlohmann {
-template <typename T>
-struct adl_serializer<std::optional<T>> {
-  static void to_json(json& j, const std::optional<T>& opt) {
-    if (opt == std::nullopt) {
-      j = nullptr;
-    } else {
-      j = *opt;
-    }
-  }
-
-  static void from_json(const json& j, std::optional<T>& opt) {
-    if (j.is_null()) {
-      opt = std::nullopt;
-    } else {
-      opt = j.get<T>();
-    }
-  }
-};
-}// namespace nlohmann
-
 namespace {
   struct BaseMessage {
     std::string cmd;
@@ -338,23 +315,11 @@ void DiscordClient::onCredentialsChanged(CredentialsCallback cb) {
 }
 
 void DiscordClient::setIsMuted(bool mute) {
-  // Don't update the state locally to avoid displaying mic mute when not muted.
-  // 1. We ask discord to mute or unmute
-  // 2. discord does that
-  // 3. discord tells subscribing apps (including us) about that
-  // 4. we update the state when discord says it's changed
-  json args;
-  args["mute"] = mute;
-  mConnection->Write(
-    {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
+  callAndForget("SET_VOICE_SETTINGS", {{"mute", mute}});
 }
 
 void DiscordClient::setIsDeafened(bool deaf) {
-  json args;
-  args["deaf"] = deaf;
-  ESDDebug("Setting deaf to {}", deaf);
-  mConnection->Write(
-    {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
+  callAndForget("SET_VOICE_SETTINGS", {{"deaf", deaf}});
 }
 
 void DiscordClient::setIsPTT(bool isPTT) {
@@ -364,6 +329,14 @@ void DiscordClient::setIsPTT(bool isPTT) {
   args["mode"] = mode;
   mConnection->Write(
     {{"nonce", getNextNonce()}, {"cmd", "SET_VOICE_SETTINGS"}, {"args", args}});
+}
+
+void DiscordClient::callAndForget(const char* command, const nlohmann::json& args) {
+  mConnection->Write({
+    { "nonce", getNextNonce() },
+    { "cmd", command },
+    { "args", args },
+  });
 }
 
 void DiscordClient::setRpcState(RpcState state) {
