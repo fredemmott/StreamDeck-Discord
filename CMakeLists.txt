@@ -20,15 +20,19 @@ set(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-if (MSVC)
+if(MSVC)
   add_definitions("/Zc:__cplusplus")
 endif()
+if(WIN32)
+  # Windows 10
+  add_compile_definitions(_WIN32_WINNT=0x0A00 WINVER=0x0A00)
+endif()
 include_directories("${CMAKE_SOURCE_DIR}")
+add_compile_definitions(JSON_USE_IMPLICIT_CONVERSIONS=0)
 
 include("StreamDeckSDK.cmake")
 include("sign_target.cmake")
 
-add_compile_definitions(JSON_USE_IMPLICIT_CONVERSIONS=0)
 
 add_subdirectory(DiscordRPCSDK)
 add_subdirectory(Sources)
