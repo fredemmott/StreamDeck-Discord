@@ -279,7 +279,7 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   }
 
 #define A(T) \
-  if (action == T ## ::ACTION_ID) { \
+  if (action == T::ACTION_ID) { \
     auto impl = std::make_shared<T>( \
       mConnectionManager, context, mClient); \
     mActions.emplace(context, impl); \
