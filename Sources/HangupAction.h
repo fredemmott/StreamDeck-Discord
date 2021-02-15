@@ -6,7 +6,6 @@
 class HangupAction final : public DiscordESDAction {
  public:
   static const std::string ACTION_ID;
-  virtual std::string GetActionID() const override { return ACTION_ID; }
   using DiscordESDAction::DiscordESDAction;
 
  protected:
@@ -21,10 +20,7 @@ class HangupAction final : public DiscordESDAction {
   virtual void Reconnected(DiscordClient& client) override final {
     client.getCurrentVoiceChannel().subscribe(
       [this](const auto& settings) {
-        GetESD()->SetState(
-          settings.channel_id.has_value() ? 1 : 0,
-          GetContext()
-        );
+        SetState(settings.channel_id.has_value() ? 1 : 0);
       }
     );
   }

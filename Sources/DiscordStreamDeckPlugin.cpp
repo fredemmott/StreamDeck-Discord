@@ -155,7 +155,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
       = json{{"event", STATE_PI_EVENT_ID}, {"state", "no client"}};
     for (const auto& [ctx, action] : mActions) {
       mConnectionManager->SendToPropertyInspector(
-        action->GetActionID(), ctx, piPayload);
+        action->GetAction(), ctx, piPayload);
     }
   }
 
@@ -168,7 +168,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
     {
       for (const auto& [ctx, action] : mActions) {
         mConnectionManager->SendToPropertyInspector(
-          action->GetActionID(), ctx, piPayload);
+          action->GetAction(), ctx, piPayload);
       }
     }
     switch (state.rpcState) {
@@ -276,7 +276,7 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
 #define A(T) \
   if (action == T::ACTION_ID) { \
     auto impl = std::make_shared<T>( \
-      mConnectionManager, context, mClient); \
+      mConnectionManager, action, context, mClient); \
     mActions.emplace(context, impl); \
     return impl; \
   }

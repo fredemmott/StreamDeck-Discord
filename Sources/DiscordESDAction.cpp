@@ -11,9 +11,10 @@
 
 DiscordESDAction::DiscordESDAction(
   ESDConnectionManager* esd,
+  const std::string& action,
   const std::string& context,
   std::shared_ptr<DiscordClient> discordClient)
-  : ESDAction(esd, context) {
+  : ESDAction(esd, action, context) {
   if (discordClient && discordClient->getState().rpcState == DiscordClient::RpcState::READY) {
     asio::post([=]() { SetDiscordClient(discordClient); });
   }
@@ -22,17 +23,17 @@ DiscordESDAction::DiscordESDAction(
 void DiscordESDAction::WillAppear(const nlohmann::json&) {
   auto client = mDiscordClient.lock();
   if (!client) {
-    GetESD()->ShowAlertForContext(GetContext());
+    ShowAlert();
     return;
   }
 
-  GetESD()->SetState(GetDesiredState(*client), GetContext());
+  SetState(GetDesiredState(*client));
 }
 
 void DiscordESDAction::KeyUp(const nlohmann::json&) {
   auto client = mDiscordClient.lock();
   if (!client) {
-    GetESD()->ShowAlertForContext(GetContext());
+    ShowAlert();
     return;
   }
 
@@ -44,9 +45,9 @@ void DiscordESDAction::SetDiscordClient(
 ) {
   mDiscordClient = client;
   if (!client) {
-    GetESD()->ShowAlertForContext(GetContext());
+    ShowAlert();
     return;
   }
   Reconnected(*client);
-  GetESD()->SetState(GetDesiredState(*client), GetContext());
+  SetState(GetDesiredState(*client));
 }

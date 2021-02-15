@@ -13,10 +13,9 @@ class DiscordESDAction : public ESDAction {
  public:
   DiscordESDAction(
     ESDConnectionManager* esd,
+    const std::string& action,
     const std::string& context,
     std::shared_ptr<DiscordClient> client);
-
-  virtual std::string GetActionID() const = 0;
 
   void SetDiscordClient(const std::shared_ptr<DiscordClient>& client);
 
