@@ -298,14 +298,22 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
         };
       }
     );
+    ESDLog("Sent subscription events");
 
     asio::co_spawn(
       *mIOContext,
       [this]() -> asio::awaitable<void> {
-        ESDDebug("Waiting for init promises");
-        for (auto& p: mInitPromises) {
+        ESDLog("Waiting for initial data");
+        for (auto& kv: mInitPromises) {
+          // MSVC doesn't allow auto [event, p] = kv, or in the for loop
+          auto event = kv.first;
+          auto p = kv.second;
+
+          ESDLog("- waiting for {}", event);
           co_await p.async_wait();
+          ESDLog("- received {}", event);
         }
+        ESDLog("Received all initial data");
         setRpcState(RpcState::WAITING_FOR_INITIAL_DATA, RpcState::READY);
       },
       asio::detached
@@ -413,7 +421,7 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
   }
 
   AwaitablePromise<void> p(*mIOContext);
-  mInitPromises.push_back(p);
+  mInitPromises.emplace(event, p);
 
   auto resolve_on_dispatch = initial_fetch == std::nullopt;
 

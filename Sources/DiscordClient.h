@@ -123,7 +123,7 @@ class DiscordClient {
   std::shared_ptr<bool> mRunning;
   std::map<std::string, AwaitablePromise<nlohmann::json>> mPromises;
   std::map<std::string, std::vector<std::function<void(const nlohmann::json&)>>> mSubscriptions;
-  std::vector<AwaitablePromise<void>> mInitPromises;
+  std::map<std::string, AwaitablePromise<void>> mInitPromises;
 
   void callAndForget(const char* func, const nlohmann::json& args);
   template<typename TRet, typename TArgs>
