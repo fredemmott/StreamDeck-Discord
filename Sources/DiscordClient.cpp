@@ -411,7 +411,7 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
   mSubscriptions[event].push_back(
     [resolve_on_dispatch, p, &target](const nlohmann::json& data) mutable {
       ESDDebug("Received sub data");
-      target->set(data);
+      target->set(data.get<TPubSub::Data>());
       if (resolve_on_dispatch) {
         p.resolve();
       }
