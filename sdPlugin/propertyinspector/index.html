@@ -111,6 +111,7 @@
 
       if (event == "discordGuilds") {
         const {guilds} = payload;
+        guilds.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);
         const input = document.getElementById('guildInput');
         guilds.forEach(guild => {
           const option = document.createElement('option');
@@ -118,6 +119,7 @@
           option.textContent = guild.name;
           input.appendChild(option);
         });
+        return;
       }
     }
   </script>
