@@ -19,8 +19,12 @@
     </div>
     <div class="sdpi-item" id="guildItem">
       <div class="sdpi-item-label">Server</div>
-      <select class="sdpi-item-value select" id="guildInput"></select>
-  </div>
+      <select class="sdpi-item-value select" id="guildInput" onchange="guildChanged()"></select>
+    </div>
+    <div class="sdpi-item" id="channelItem">
+      <div class="sdpi-item-label">Channel</div>
+      <select class="sdpi-item-value select" id="channelInput" onchange="saveSettings()"></select>
+    </div>
     <div class="sdpi-item">
       <div class="sdpi-item-label">Discord</div>
       <button class="sdpi-item-value" type="button" onclick="reconnect();">Reconnect</button>
@@ -121,6 +125,43 @@
         });
         return;
       }
+
+      if (event == "discordChannels") {
+        const { guild_id, channels } = payload;
+        const categories = channels.filter(channel => channel.type == 4);
+        const select = document.getElementById('channelInput');
+        categories.forEach(category => {
+          const group = document.createElement('optgroup');
+          group.label = category.name;
+          select.append(group);
+          channels.forEach(channel => {
+            // Guild voice channels only
+            if (channel.type != 2) {
+              console.log('skipping channel type', channel.type);
+              return;
+            }
+            console.log("Found a voice channel");
+            if (channel.parent_id != category.id) {
+              return;
+            }
+            console.log("Found one in the right category");
+            const option = document.createElement('option');
+            option.value = channel.id;
+            option.textContent = channel.name;
+            group.append(option);
+          });
+        });
+      }
+    }
+
+    function guildChanged() {
+      console.log('in guildChanged');
+      const guild_id = document.getElementById('guildInput').value;
+      console.log('sending plugin event');
+      $SD.api.sendToPlugin(uuid, actionInfo, {
+        "event": "getGuildChannels",
+        "guild_id": guild_id,
+      });
     }
   </script>
 

@@ -32,7 +32,7 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
     auto event = payload.at("event").get<std::string>();
 
     if (event == "getDiscordGuilds") {
-      ESDDebug("Spawning GetDiscordGuilds");
+      ESDDebug("Spawning getDiscordGuilds");
       asio::co_spawn(
         *GetESD()->GetAsioContext(),
         [this]() -> asio::awaitable<void> {
@@ -41,7 +41,7 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
             ESDDebug("No client");
             co_return;
           }
-          ESDDebug("waiting for uguilds");
+          ESDDebug("waiting for guilds");
           auto guilds = co_await client->coGetGuilds();
           ESDDebug("got guilds");
           SendToPropertyInspector({
@@ -53,5 +53,31 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
       );
       return;
     }
+
+		if (event == "getGuildChannels") {
+      const auto guild_id = payload.at("guild_id").get<std::string>();
+			ESDDebug("Spawning getGuildChannels");
+			asio::co_spawn(
+				*GetESD()->GetAsioContext(),
+				[this, guild_id]() -> asio::awaitable<void> {
+					auto client = GetDiscordClient().lock();
+					if (!client) {
+						ESDDebug("No client");
+						co_return;
+					}
+					ESDDebug("waiting for channels");
+					auto channels = co_await client->coGetChannels(guild_id);
+					ESDDebug("got channels");
+					SendToPropertyInspector({
+						{ "event", "discordChannels" },
+						{ "guild_id", guild_id },
+            { "channels", channels },
+					});
+				},
+				asio::detached
+			);
+			return;
+		}
+
   }
 };
