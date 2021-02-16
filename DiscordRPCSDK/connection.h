@@ -14,7 +14,7 @@ struct BaseConnection final {
     bool isOpen{false};
     bool Open();
     bool Close();
-    bool Write(const void* data, size_t length);
+    asio::awaitable<bool> AsyncWrite(const void* data, size_t length);
     asio::awaitable<bool> AsyncRead(void* data, size_t length);
     private:
       struct Impl;

@@ -179,7 +179,7 @@ asio::awaitable<void> DiscordClient::initialize() {
 
   if (mCredentials.accessToken.empty()) {
     setRpcState(RpcState::CONNECTING, RpcState::REQUESTING_USER_PERMISSION);
-    mConnection->Write(
+    co_await mConnection->AsyncWrite(
       {{"nonce", getNextNonce()},
        {"cmd", "AUTHORIZE"},
        {"args", {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
@@ -187,7 +187,7 @@ asio::awaitable<void> DiscordClient::initialize() {
   }
 
   setRpcState(RpcState::CONNECTING, RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
-  mConnection->Write(
+  co_await mConnection->AsyncWrite(
     {{"nonce", getNextNonce()},
      {"cmd", "AUTHENTICATE"},
      {"args", {{"access_token", mCredentials.accessToken}}}});
@@ -199,7 +199,7 @@ void DiscordClient::startAuthenticationWithNewAccessToken() {
   setRpcState(
     RpcState::REQUESTING_ACCESS_TOKEN,
     RpcState::AUTHENTICATING_WITH_ACCESS_TOKEN);
-  mConnection->Write(
+  writeAndForget(
     {{"nonce", getNextNonce()},
      {"cmd", "AUTHENTICATE"},
      {"args", {"access_token", mCredentials.accessToken}}});
@@ -284,7 +284,7 @@ bool DiscordClient::processDiscordRPCMessage(const nlohmann::json& message) {
         setRpcState(
           RpcState::REQUESTING_ACCESS_TOKEN,
           RpcState::REQUESTING_USER_PERMISSION);
-        mConnection->Write(
+        writeAndForget(
           {{"nonce", getNextNonce()},
            {"cmd", "AUTHORIZE"},
            {"args", {{"client_id", mAppId}, {"scopes", {"identify", "rpc"}}}}});
@@ -384,7 +384,7 @@ void DiscordClient::setCurrentVoiceChannel(const std::string& id) {
 }
 
 void DiscordClient::callAndForget(const char* command, const nlohmann::json& args) {
-  mConnection->Write({
+  writeAndForget({
     { "nonce", getNextNonce() },
     { "cmd", command },
     { "args", args },
@@ -419,7 +419,7 @@ asio::awaitable<TRet> DiscordClient::commandImpl(const char* command, TArgs args
   };
   AwaitablePromise<nlohmann::json> p(*mIOContext);
   mPromises.emplace(nonce, p);
-  mConnection->Write(request);
+  co_await mConnection->AsyncWrite(request);
   const nlohmann::json json_response = co_await p.async_wait();
   ESDDebug("Finished waiting for command promise");
   ESDDebug("Response: {}", json_response.dump());
@@ -464,7 +464,7 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
     { "evt", event }
   };
   ESDDebug("Sending sub {}", sub.dump());
-  mConnection->Write(sub);
+  writeAndForget(sub);
   ESDDebug("Sent sub");
 
   if (resolve_on_dispatch) {
@@ -477,6 +477,17 @@ void DiscordClient::subscribeImpl(const char* event, std::unique_ptr<TPubSub>& t
       auto data = co_await (*initial_fetch)();
       target->set(data);
       p.resolve();
+    },
+    asio::detached
+  );
+}
+
+void DiscordClient::writeAndForget(const nlohmann::json& json) {
+  auto copy = json;
+  asio::co_spawn(
+    *mIOContext,
+    [copy, this]() -> asio::awaitable<void> {
+      co_await mConnection->AsyncWrite(copy);
     },
     asio::detached
   );

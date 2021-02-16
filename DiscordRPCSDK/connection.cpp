@@ -111,17 +111,21 @@ bool BaseConnection::Close()
     return true;
 }
 
-bool BaseConnection::Write(const void* data, size_t length)
+asio::awaitable<bool> BaseConnection::AsyncWrite(const void* data, size_t length)
 {
     if (!this->p->asiosock) {
-        return false;
+        co_return false;
     }
 
-    ssize_t sentBytes = this->p->asiosock->write_some(asio::buffer(data, length));
+    asio::error_code ec;
+    ssize_t sentBytes = co_await this->p->asiosock->async_write_some(asio::buffer(data, length), asio::redirect_error(asio::use_awaitable, ec));
+    if (ec) {
+        Close();
+    }
     if (sentBytes < 0) {
         Close();
     }
-    return sentBytes == (ssize_t)length;
+    co_return sentBytes == (ssize_t)length;
 }
 
 asio::awaitable<bool> BaseConnection::AsyncRead(void* data, size_t length) {

@@ -135,4 +135,6 @@ class DiscordClient {
       std::function<asio::awaitable<typename TPubSub::Data>()>
     > init = std::nullopt
   );
+
+  void writeAndForget(const nlohmann::json& json);
 };

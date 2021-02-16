@@ -53,7 +53,7 @@ asio::awaitable<bool> RpcConnection::AsyncOpen() {
     sendFrame.length = json.length();
     strncpy_s(sendFrame.message, json.c_str(), sizeof(sendFrame.message));
 
-    if (this->Write(sendFrame)) {
+    if (co_await this->AsyncWrite(sendFrame)) {
       state = State::SentHandshake;
     } else {
       Close();
@@ -85,8 +85,8 @@ asio::awaitable<bool> RpcConnection::AsyncOpen() {
   }
 }
 
-bool RpcConnection::Write(const MessageFrame& message) {
-  return connection->Write(
+asio::awaitable<bool> RpcConnection::AsyncWrite(const MessageFrame& message) {
+  return connection->AsyncWrite(
     &message, sizeof(MessageFrameHeader) + message.length);
 }
 
@@ -105,21 +105,21 @@ void RpcConnection::Close() {
   state = State::Disconnected;
 }
 
-void RpcConnection::Write(const json& message) {
+asio::awaitable<void> RpcConnection::AsyncWrite(const json& message) {
   const auto json = message.dump();
   ESDDebug("Writing raw {}", json);
-  Write(json.c_str(), json.length());
+  co_await AsyncWrite(json.c_str(), json.length());
 }
 
-bool RpcConnection::Write(const void* data, size_t length) {
+asio::awaitable<bool> RpcConnection::AsyncWrite(const void* data, size_t length) {
   sendFrame.opcode = Opcode::Frame;
   memcpy_s(sendFrame.message, sizeof(sendFrame.message), data, length);
   sendFrame.length = (uint32_t)length;
-  if (!connection->Write(&sendFrame, sizeof(MessageFrameHeader) + length)) {
+  if (!co_await connection->AsyncWrite(&sendFrame, sizeof(MessageFrameHeader) + length)) {
     Close();
-    return false;
+    co_return false;
   }
-  return true;
+  co_return true;
 }
 
 asio::awaitable<bool> RpcConnection::AsyncRead(json* message) {
@@ -169,7 +169,7 @@ asio::awaitable<bool> RpcConnection::AsyncRead(MessageFrame& readFrame) {
         co_return true;
       case Opcode::Ping:
         readFrame.opcode = Opcode::Pong;
-        if (!connection->Write(
+        if (!co_await connection->AsyncWrite(
               &readFrame, sizeof(MessageFrameHeader) + readFrame.length)) {
           Close();
         }
