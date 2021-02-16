@@ -135,7 +135,7 @@
       "Tooltip": "Set Voice-Activated off)",
       "UUID": "com.fredemmott.discord.ptton"
     },
-		{
+    {
 			"Icon": "discord-ptt",
 			"States": [
 				{
@@ -146,10 +146,25 @@
 				}
 			],
 			"SupportedInMultiActions": true,
-			"Name": "Hangup",
-			"Tooltip": "Disconnect from the current voice channel",
-			"UUID": "com.fredemmott.discord.hangup"
-		}
+			"Name": "Join Voice Channel",
+			"Tooltip": "Join a specific voice channel",
+			"UUID": "com.fredemmott.discord.joinvoicechannel"
+		},
+    {
+      "Icon": "discord-ptt",
+      "States": [
+        {
+          "Image": "discord-ptt"
+        },
+        {
+          "Image": "discord-va"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Name": "Hangup",
+      "Tooltip": "Disconnect from the current voice channel",
+      "UUID": "com.fredemmott.discord.hangup"
+    }
 
   ],
   "Author": "Fred Emmott",

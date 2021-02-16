@@ -2,105 +2,125 @@
 <html>
 
 <head>
-	<title>com.fredemmott.discord PI</title>
-	<meta charset="utf-8" />
-	<link rel="stylesheet" href="css/sdpi.css">
+  <title>com.fredemmott.discord PI</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="css/sdpi.css">
 </head>
 
 <body>
-	<div class="sdpi-wrapper hidden" id="mainWrapper">
-		<div class="sdpi-item">
-			<div class="sdpi-item-label">App ID</div>
-			<input class="sdpi-item-value" id="appId" onchange="saveSettings();" required />
-		</div>
-		<div class="sdpi-item">
-			<div class="sdpi-item-label">App Secret</div>
-			<input class="sdpi-item-value" type="password" id="appSecret" onchange="saveSettings();" required />
-		</div>
-		<div class="sdpi-item">
-			<div class="sdpi-item-label">Discord</div>
-			<button class="sdpi-item-value" type="button" onclick="reconnect();">Reconnect</button>
-			<button class="sdpi-item-value" type="button" onclick="reauthenticate();">Reauthenticate</button>
-		</div>
-		<details>
-			<summary>Debug Information</summary>
-			<dl>
-				<dt>State</dt>
-				<dd id="rpcState">no info</dd>
-				<dt>Last State Change</dt>
-				<dd id="rpcStateTimestamp">never</dd>
-			</dl>
-		</details>
-	</div>
+  <div class="sdpi-wrapper hidden" id="mainWrapper">
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">App ID</div>
+      <input class="sdpi-item-value" id="appId" onchange="saveSettings();" required />
+    </div>
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">App Secret</div>
+      <input class="sdpi-item-value" type="password" id="appSecret" onchange="saveSettings();" required />
+    </div>
+    <div class="sdpi-item" id="guildItem">
+      <div class="sdpi-item-label">Server</div>
+      <select class="sdpi-item-value select" id="guildInput"></select>
+  </div>
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Discord</div>
+      <button class="sdpi-item-value" type="button" onclick="reconnect();">Reconnect</button>
+      <button class="sdpi-item-value" type="button" onclick="reauthenticate();">Reauthenticate</button>
+    </div>
+    <details>
+      <summary>Debug Information</summary>
+      <dl>
+        <dt>State</dt>
+        <dd id="rpcState">no info</dd>
+        <dt>Last State Change</dt>
+        <dd id="rpcStateTimestamp">never</dd>
+      </dl>
+    </details>
+  </div>
+  <script src="common.js"></script>
+  <script>
 
-	<script src="common.js"></script>
-	<script>
+    /** Step 1: Subscribe to the 'connected' event
+     * and call your own initialization method.
+     * The connected - event is emitted, when StreamDeck
+     * has established a connection.
+     * The 'connected' event carries a JSON object containing
+     * necessary information about the connection and the
+     * inital data.
+     */
+    var uuid,
+      actionInfo,
+      ctx,
+      settings;
 
-		/** Step 1: Subscribe to the 'connected' event
-		 * and call your own initialization method.
-		 * The connected - event is emitted, when StreamDeck
-		 * has established a connection.
-		 * The 'connected' event carries a JSON object containing
-		 * necessary information about the connection and the
-		 * inital data.
-		 */
-		var uuid,
-			actionInfo,
-			ctx,
-			settings;
+    $SD.on('connected', (jsonObj) => connected(jsonObj));
+    $SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
+    $SD.on('sendToPropertyInspector', (jsonObj) => sendToPropertyInspector(jsonObj));
 
-		$SD.on('connected', (jsonObj) => connected(jsonObj));
-		$SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
-		$SD.on('sendToPropertyInspector', (jsonObj) => sendToPropertyInspector(jsonObj));
+    function connected(jsonObj) {
+      uuid = jsonObj.uuid;
+      actionInfo = jsonObj.actionInfo.action;
+      ctx = jsonObj.actionInfo.context;
 
-		function connected(jsonObj) {
-			uuid = jsonObj.uuid;
-			actionInfo = jsonObj.actionInfo.action;
-			ctx = jsonObj.actionInfo.context;
+      $SD.api.getGlobalSettings(uuid);
+      $SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.getState"});
+      console.log('connected', jsonObj, actionInfo);
+      if (actionInfo == "com.fredemmott.discord.joinvoicechannel") {
+        console.log('requesting guilds');
+        $SD.api.sendToPlugin(uuid, actionInfo, {event: "getDiscordGuilds"});
+      }
+    };
 
-			$SD.api.getGlobalSettings(uuid);
-			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.getState"});
-		};
+    function didReceiveGlobalSettings(jsonObj) {
+      settings = jsonObj.payload.settings;
+      document.getElementById('appId').value = settings.appId;
+      document.getElementById('appSecret').value = settings.appSecret;
+      document.getElementById('mainWrapper').classList.remove('hidden');
+    };
 
-		function didReceiveGlobalSettings(jsonObj) {
-			settings = jsonObj.payload.settings;
-			document.getElementById('appId').value = settings.appId;
-			document.getElementById('appSecret').value = settings.appSecret;
-			document.getElementById('mainWrapper').classList.remove('hidden');
-		};
+    function saveSettings() {
+      const appId = document.getElementById('appId').value;
+      const appSecret = document.getElementById('appSecret').value;
+      if (appId == settings.appId && appSecret == settings.appSecret) {
+        return;
+      }
+      settings.appId = appId;
+      settings.appSecret = appSecret;
+      settings.oauthToken = "";
+      settings.refreshToken = "";
+      $SD.api.setGlobalSettings(uuid, settings);
+    };
 
-		function saveSettings() {
-			const appId = document.getElementById('appId').value;
-			const appSecret = document.getElementById('appSecret').value;
-			if (appId == settings.appId && appSecret == settings.appSecret) {
-				return;
-			}
-			settings.appId = appId;
-			settings.appSecret = appSecret;
-			settings.oauthToken = "";
-			settings.refreshToken = "";
-			$SD.api.setGlobalSettings(uuid, settings);
-		};
+    function reconnect() {
+      $SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reconnect"});
+    };
 
-		function reconnect() {
-			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reconnect"});
-		};
+    function reauthenticate() {
+      $SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reauthenticate"});
+    };
 
-		function reauthenticate() {
-			$SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.reauthenticate"});
-		};
+    function sendToPropertyInspector(jsonObj) {
+      console.log(jsonObj);
+      const payload = jsonObj.payload;
+      const {event} = payload;
 
-		function sendToPropertyInspector(jsonObj) {
-			console.log(jsonObj);
-			const payload = jsonObj.payload;
-			const {event} = payload;
-			if (event != "com.fredemmott.discord.rpc.state") {
-				return;
-			}
-			document.getElementById('rpcState').innerText = payload.state;
-			document.getElementById('rpcStateTimestamp').innerText = (new Date()).toLocaleString();
-		}
-	</script>
+      if (event == "com.fredemmott.discord.rpc.state") {
+        document.getElementById('rpcState').innerText = payload.state;
+        document.getElementById('rpcStateTimestamp').innerText = (new Date()).toLocaleString();
+        return;
+      }
+
+      if (event == "discordGuilds") {
+        const {guilds} = payload;
+        const input = document.getElementById('guildInput');
+        guilds.forEach(guild => {
+          const option = document.createElement('option');
+          option.value = guild.id;
+          option.textContent = guild.name;
+          input.appendChild(option);
+        });
+      }
+    }
+  </script>
 
 </body>
 

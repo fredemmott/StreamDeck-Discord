@@ -22,6 +22,7 @@ LICENSE file.
 #include "DeafenToggleAction.h"
 #include "DiscordClient.h"
 #include "HangupAction.h"
+#include "JoinVoiceChannelAction.h"
 #include "SelfMuteOffAction.h"
 #include "SelfMuteOnAction.h"
 #include "SelfMuteToggleAction.h"
@@ -104,6 +105,8 @@ void DiscordStreamDeckPlugin::SendToPlugin(
   const std::string& inContext,
   const json& inPayload,
   const std::string& inDeviceID) {
+  ESDPlugin::SendToPlugin(inAction, inContext, inPayload, inDeviceID);
+
   const auto event = EPLJSONUtils::GetStringByName(inPayload, "event");
   ESDLog("PI event: {}", event);
   ESDDebug("PI data: {}", inPayload.dump());
@@ -293,6 +296,7 @@ std::shared_ptr<ESDAction> DiscordStreamDeckPlugin::GetOrCreateAction(
   A(PTTOnAction);
   A(PTTOffAction);
 
+  A(JoinVoiceChannelAction);
   A(HangupAction);
 
 #undef A

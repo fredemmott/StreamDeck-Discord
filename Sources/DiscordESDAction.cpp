@@ -45,9 +45,15 @@ void DiscordESDAction::SetDiscordClient(
 ) {
   mDiscordClient = client;
   if (!client) {
+    ESDDebug("Set null client");
     ShowAlert();
     return;
   }
+  ESDDebug("Set non-null client");
   Reconnected(*client);
   SetState(GetDesiredState(*client));
+}
+
+std::weak_ptr<DiscordClient> DiscordESDAction::GetDiscordClient() {
+  return mDiscordClient;
 }
