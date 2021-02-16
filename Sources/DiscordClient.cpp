@@ -107,18 +107,8 @@ asio::awaitable<std::vector<Guild>> DiscordClient::coGetGuilds() {
 asio::awaitable<std::vector<Channel>> DiscordClient::coGetChannels(
   const std::string& guild_id
 ) {
-  const auto partial_data = co_await commandImpl<GetChannelsResponse>("GET_CHANNELS", nlohmann::json { {"guild_id", guild_id  }});
-  std::vector<asio::awaitable<Channel>> handles;
-  for (const auto& channel: partial_data.channels) {
-    handles.push_back(std::move(commandImpl<Channel>("GET_CHANNEL", nlohmann::json { { "channel_id", channel.id } })));
-  }
-  std::vector<Channel> full_data;
-  for (int i = 0; i < handles.size(); ++i) {
-    auto handle = std::move(handles[i]);
-    auto channel = co_await std::move(handle);
-    full_data.push_back(channel);
-  }
-  co_return full_data;
+  const auto data = co_await commandImpl<GetChannelsResponse>("GET_CHANNELS", nlohmann::json { {"guild_id", guild_id  }});
+  co_return data.channels;
 }
 
 void DiscordClient::initializeInCurrentThread() {
