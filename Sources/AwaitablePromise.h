@@ -13,27 +13,35 @@ struct AwaitablePromiseBase {
   public:
     AwaitablePromiseBase(
       asio::io_context& ctx
-    ): mTimer(
-      new asio::steady_timer(
-        ctx,
-        std::chrono::steady_clock::time_point::max()
-      )
-    ) {
+    ): p(new Impl {
+      .timer = asio::steady_timer(ctx, std::chrono::steady_clock::time_point::max())
+    }) {
     }
 
     asio::awaitable<void> async_wait() {
       asio::error_code ec;
-      co_await mTimer->async_wait(asio::redirect_error(asio::use_awaitable, ec));
+      if (p->resolved) {
+        co_return;
+      }
+      co_await p->timer.async_wait(asio::redirect_error(asio::use_awaitable, ec));
       assert(ec == asio::error::operation_aborted);
     }
 
   protected:
     void resolve() noexcept {
-      mTimer->cancel();
+      if (p->resolved) {
+        return;
+      }
+      p->resolved = true;
+      p->timer.cancel();
     }
 
   private:
-    std::shared_ptr<asio::steady_timer> mTimer;
+    struct Impl {
+      asio::steady_timer timer;
+      bool resolved { false };
+    };
+    std::shared_ptr<Impl> p;
 };
 
 template<class T>
