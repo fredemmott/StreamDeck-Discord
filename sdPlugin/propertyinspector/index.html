@@ -103,7 +103,6 @@
     };
 
     function sendToPropertyInspector(jsonObj) {
-      console.log(jsonObj);
       const payload = jsonObj.payload;
       const {event} = payload;
 
@@ -128,36 +127,24 @@
 
       if (event == "discordChannels") {
         const { guild_id, channels } = payload;
-        const categories = channels.filter(channel => channel.type == 4);
+        const voice_channels = channels.filter(channel => channel.type == 2);
+        voice_channels.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);
         const select = document.getElementById('channelInput');
-        categories.forEach(category => {
-          const group = document.createElement('optgroup');
-          group.label = category.name;
-          select.append(group);
-          channels.forEach(channel => {
-            // Guild voice channels only
-            if (channel.type != 2) {
-              console.log('skipping channel type', channel.type);
-              return;
-            }
-            console.log("Found a voice channel");
-            if (channel.parent_id != category.id) {
-              return;
-            }
-            console.log("Found one in the right category");
-            const option = document.createElement('option');
-            option.value = channel.id;
-            option.textContent = channel.name;
-            group.append(option);
-          });
+        voice_channels.forEach(channel => {
+          const option = document.createElement('option');
+          option.value = channel.id;
+          option.textContent = channel.name;
+          select.append(option);
         });
       }
     }
 
     function guildChanged() {
-      console.log('in guildChanged');
+      const channel_select = document.getElementById('channelInput');
+      while (channel_select.firstChild) {
+        channel_select.removeChild(channel_select.firstChild);
+      }
       const guild_id = document.getElementById('guildInput').value;
-      console.log('sending plugin event');
       $SD.api.sendToPlugin(uuid, actionInfo, {
         "event": "getGuildChannels",
         "guild_id": guild_id,
