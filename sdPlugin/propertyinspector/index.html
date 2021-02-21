@@ -80,8 +80,12 @@
 
     function didReceiveGlobalSettings(jsonObj) {
       globalSettings = jsonObj.payload.settings;
-      document.getElementById('appId').value = globalSettings.appId;
-      document.getElementById('appSecret').value = globalSettings.appSecret;
+      if (globalSettings.appId) {
+        document.getElementById('appId').value = globalSettings.appId;
+      }
+      if (globalSettings.appSecret) {
+        document.getElementById('appSecret').value = globalSettings.appSecret;
+      }
       document.getElementById('mainWrapper').classList.remove('hidden');
     };
 
