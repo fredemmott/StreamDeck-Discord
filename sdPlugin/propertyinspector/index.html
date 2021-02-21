@@ -45,6 +45,7 @@
   </div>
   <script src="common.js"></script>
   <script>
+    const JOIN_VOICE_CHANNEL_ACTION = "com.fredemmott.discord.joinvoicechannel";
 
     /** Step 1: Subscribe to the 'connected' event
      * and call your own initialization method.
@@ -57,7 +58,7 @@
     var uuid,
       actionInfo,
       ctx,
-      settings;
+      globalSettings;
 
     $SD.on('connected', (jsonObj) => connected(jsonObj));
     $SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
@@ -71,30 +72,30 @@
       $SD.api.getGlobalSettings(uuid);
       $SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.getState"});
       console.log('connected', jsonObj, actionInfo);
-      if (actionInfo == "com.fredemmott.discord.joinvoicechannel") {
+      if (actionInfo == JOIN_VOICE_CHANNEL_ACTION) {
         console.log('requesting guilds');
         $SD.api.sendToPlugin(uuid, actionInfo, {event: "getDiscordGuilds"});
       }
     };
 
     function didReceiveGlobalSettings(jsonObj) {
-      settings = jsonObj.payload.settings;
-      document.getElementById('appId').value = settings.appId;
-      document.getElementById('appSecret').value = settings.appSecret;
+      globalSettings = jsonObj.payload.settings;
+      document.getElementById('appId').value = globalSettings.appId;
+      document.getElementById('appSecret').value = globalSettings.appSecret;
       document.getElementById('mainWrapper').classList.remove('hidden');
     };
 
     function saveSettings() {
       const appId = document.getElementById('appId').value;
       const appSecret = document.getElementById('appSecret').value;
-      if (appId == settings.appId && appSecret == settings.appSecret) {
+      if (appId == globalSettings.appId && appSecret == globalSettings.appSecret) {
         return;
       }
-      settings.appId = appId;
-      settings.appSecret = appSecret;
-      settings.oauthToken = "";
-      settings.refreshToken = "";
-      $SD.api.setGlobalSettings(uuid, settings);
+      globalSettings.appId = appId;
+      globalSettings.appSecret = appSecret;
+      globalSettings.oauthToken = "";
+      globalSettings.refreshToken = "";
+      $SD.api.setGlobalSettings(uuid, globalSettings);
     };
 
     function reconnect() {
