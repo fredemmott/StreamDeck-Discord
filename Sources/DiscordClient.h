@@ -114,6 +114,10 @@ class DiscordClient {
     const std::string& grantType,
     const std::string& secretType,
     const std::string& secret);
+  asio::awaitable<Credentials> coGetOAuthCredentials(
+    const std::string& grantType,
+    const std::string& secretType,
+    const std::string& secret);
   void setRpcState(RpcState state);
   void setRpcState(RpcState oldState, RpcState newState);
   std::string getNextNonce();

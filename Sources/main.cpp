@@ -4,5 +4,8 @@
 #include <StreamDeckSDK/ESDLogger.h>
 
 int main(int argc, const char** argv) {
-  return esd_main(argc, argv, new DiscordStreamDeckPlugin());
+  ESDDebug("int main()");
+  auto result = esd_main(argc, argv, new DiscordStreamDeckPlugin());
+  ESDDebug("Exit with code {}", result);
+  return result;
 }

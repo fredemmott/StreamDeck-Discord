@@ -14,6 +14,18 @@ using namespace DiscordPayloads;
 namespace {
 
 template<class T>
+void resolve_future(asio::io_context& ctx, std::future<T>& f) {
+	if (!f.valid()) {
+    return;
+  }
+
+  while(f.wait_for(std::chrono::seconds::zero()) != std::future_status::ready) {
+		ctx.poll();
+	}
+}
+
+
+template<class T>
 class PubSubDataImpl : public PubSubData<T> {
   public:
     typedef typename PubSubDataImpl<T>::Subscriber Subscriber;
@@ -91,10 +103,7 @@ DiscordClient::~DiscordClient() {
   }
   if (mWorker.valid()) {
     ESDDebug("Waiting for worker...");
-    while(mWorker.wait_for(std::chrono::seconds::zero()) != std::future_status::ready) {
-      ESDDebug("polling for worker...");
-      mIOContext->poll();
-    }
+    resolve_future(*mIOContext, mWorker);
     ESDDebug("Worker shut down.");
   }
 }
@@ -481,4 +490,22 @@ void DiscordClient::writeAndForget(const nlohmann::json& json) {
     },
     asio::detached
   );
+}
+
+DiscordClient::Credentials DiscordClient::getOAuthCredentials(
+    const std::string& grantType,
+    const std::string& secretType,
+    const std::string& secret) {
+  ESDDebug("Spawing coroutine");
+  auto future = asio::co_spawn(
+    *mIOContext,
+    [=]() -> asio::awaitable<Credentials> {
+      co_return co_await coGetOAuthCredentials(grantType, secretType, secret);
+    },
+    asio::use_future
+  );
+  ESDDebug("resolving future");
+  resolve_future(*mIOContext, future);
+  ESDDebug("resolved");
+  return future.get();
 }

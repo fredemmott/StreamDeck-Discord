@@ -143,10 +143,11 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
   ESDDebug("Connecting to Discord");
   if (mClient) {
     auto state = mClient->getState();
-    if (state.rpcState == DiscordClient::RpcState::CONNECTING || state.rpcState == DiscordClient::RpcState::READY) {
-      ESDDebug("Already connected, aborting.");
-      return;
-    }
+    ESDDebug(
+      "Not connecting - existing client with state {}",
+      DiscordClient::getRpcStateName(state.rpcState)
+    );
+    return;
   }
   Credentials creds = mCredentials;
 
@@ -182,12 +183,12 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
       }
         return;
       case DiscordClient::RpcState::CONNECTION_FAILED:
+        mClient.reset();
         ConnectToDiscordLater();
         return;
       case DiscordClient::RpcState::DISCONNECTED:
         ESDLog("Disconnected from Discord");
-        mClient.reset();
-        ConnectToDiscordLater();
+        ReconnectToDiscord();
         // fallthrough
       case DiscordClient::RpcState::AUTHENTICATION_FAILED: {
         for (const auto& [ctx, _action] : mActions) {

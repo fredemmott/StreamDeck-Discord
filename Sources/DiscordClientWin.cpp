@@ -5,7 +5,10 @@
 #include <Rpc.h>
 #include <WinInet.h>
 #include <shlwapi.h>
+
 #include <memory>
+#include <map>
+#include <set>
 #include <sstream>
 
 namespace {
@@ -29,6 +32,48 @@ std::string urlencode(const std::string& in) {
   }
   return out;
 }
+
+struct InternetCallbackContext {
+  std::map<DWORD, AwaitablePromise<void>*> promises;
+  std::set<DWORD> seen;
+
+  asio::awaitable<void> async_wait_for(
+    DWORD status
+  ) {
+    if (seen.contains(status)) {
+      seen.clear();
+      co_return;
+    }
+    AwaitablePromise<void>* old = promises.contains(status) ? promises.at(status) : nullptr;
+    auto executor = co_await asio::this_coro::executor;
+    AwaitablePromise<void> p(reinterpret_cast<asio::io_context&>(executor.context()));
+    promises.insert_or_assign(status, &p);
+    co_await p.async_wait();
+    if (old) {
+      old->resolve();
+      promises.insert_or_assign(status, old);
+    } else {
+      promises.erase(status);
+    }
+    seen.clear();
+  }
+};
+
+void CALLBACK internet_status_callback(
+  HINTERNET hInternet,
+  DWORD_PTR dwContext,
+  DWORD dwInternetStatus,
+  LPVOID lpvStatusInformation,
+  DWORD dwStatusInformationLength
+) {
+  ESDDebug("Internet status callback: {}", dwInternetStatus);
+  auto ctx = reinterpret_cast<InternetCallbackContext*>(dwContext);
+  if (ctx->promises.contains(dwInternetStatus)) {
+    ctx->promises.at(dwInternetStatus)->resolve();
+  }
+  ctx->seen.insert(dwInternetStatus);
+}
+
 }// namespace
 
 std::string DiscordClient::getNextNonce() {
@@ -41,24 +86,34 @@ std::string DiscordClient::getNextNonce() {
   return ret;
 }
 
-DiscordClient::Credentials DiscordClient::getOAuthCredentials(
+asio::awaitable<DiscordClient::Credentials> DiscordClient::coGetOAuthCredentials(
   const std::string& grantType,
   const std::string& secretType,
   const std::string& secret) {
   if (!hInternet) {
+    ESDDebug("Calling InternetOpen");
     hInternet = InternetOpenA(
       "com.fredemmott.streamdeck-discord", INTERNET_OPEN_TYPE_PRECONFIG,
-      nullptr, nullptr, 0);
+      nullptr, nullptr, INTERNET_FLAG_ASYNC);
+    InternetSetStatusCallback(hInternet, &internet_status_callback);
   }
 
+  AwaitablePromise<void> p(*mIOContext);
+  InternetCallbackContext ctx;
+
+  ESDDebug("Calling InternetConnectA");
   auto hConnection = InternetConnectA(
     hInternet, "discordapp.com", INTERNET_DEFAULT_HTTPS_PORT, nullptr, nullptr,
     INTERNET_SERVICE_HTTP,
     INTERNET_FLAG_SECURE,// HTTPS please
-    NULL);
+    reinterpret_cast<DWORD_PTR>(&ctx));
+  ESDDebug("Waiting!");
+  co_await ctx.async_wait_for(INTERNET_STATUS_HANDLE_CREATED);
+  ESDDebug("Calling HttpOpenRequestA");
+
   auto hRequest = HttpOpenRequestA(
     hConnection, "POST", "/api/oauth2/token", nullptr, nullptr, nullptr,
-    INTERNET_FLAG_SECURE, NULL);
+    INTERNET_FLAG_SECURE, reinterpret_cast<DWORD_PTR>(&ctx));
 
   const auto headers
     = "Content-Type: application/x-www-form-urlencoded\r\nHost: "
@@ -70,10 +125,14 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
      << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)
      << "&client_secret=" << urlencode(mAppSecret);
   const auto postData = ss.str();
-  ESDDebug("sending: {}", postData.c_str());
 
+  ESDDebug("Sending request");
   HttpSendRequestA(
     hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
+
+  ESDDebug("---Waiting for sendrequest");
+
+  co_await ctx.async_wait_for(INTERNET_STATUS_REQUEST_COMPLETE);
 
   // I tried using HttpQueryInfo to get Content-Length; it turns out that
   // Discord only send a Content-Length header for error cases.
@@ -84,12 +143,15 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
     InternetReadFile(hRequest, buf, sizeof(buf), &bytesRead);
     response += std::string(buf, bytesRead);
   } while (bytesRead > 0);
+  ESDDebug("---InternetCloseHandle");
+  InternetCloseHandle(hRequest);
 
-  ESDDebug("received: {}", response.c_str());
+  ESDDebug("received credentials");
   const json parsed = json::parse(response);
+  ESDDebug("parsed");
   mCredentials.accessToken
     = EPLJSONUtils::GetStringByName(parsed, "access_token");
   mCredentials.refreshToken
     = EPLJSONUtils::GetStringByName(parsed, "refresh_token");
-  return mCredentials;
+  co_return mCredentials;
 }

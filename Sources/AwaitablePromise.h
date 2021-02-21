@@ -56,6 +56,11 @@ struct AwaitablePromise : public AwaitablePromiseBase<T> {
     AwaitablePromiseBase<T>::resolve();
   }
 
+  void reset() noexcept {
+    mData = std::make_shared<T>();
+    AwaitablePromiseBase<T>::reset();
+  }
+
   T result() const {
     return *mData;
   }

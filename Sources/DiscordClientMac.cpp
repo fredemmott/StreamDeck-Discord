@@ -51,7 +51,7 @@ std::string DiscordClient::getNextNonce() {
   return std::string(uuidString);
 }
 
-DiscordClient::Credentials DiscordClient::getOAuthCredentials(
+asio::awaitable<DiscordClient::Credentials> DiscordClient::coGetOAuthCredentials(
   const std::string& grantType,
   const std::string& secretType,
   const std::string& secret) {
@@ -80,7 +80,7 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
 
   auto result = curl_easy_perform(curl);
   if (result != CURLE_OK) {
-    return Credentials{};
+    co_return Credentials{};
   }
 
   // I tried using HttpQueryInfo to get Content-Length;
@@ -89,5 +89,5 @@ DiscordClient::Credentials DiscordClient::getOAuthCredentials(
   const json parsed = json::parse(response);
   out.accessToken = EPLJSONUtils::GetStringByName(parsed, "access_token");
   out.refreshToken = EPLJSONUtils::GetStringByName(parsed, "refresh_token");
-  return out;
+  co_return out;
 }
