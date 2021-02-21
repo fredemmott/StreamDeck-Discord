@@ -19,8 +19,8 @@ class HangupAction final : public DiscordESDAction {
 
   virtual void Reconnected(DiscordClient& client) override final {
     client.getCurrentVoiceChannel().subscribe(
-      [this](const auto& settings) {
-        SetState(settings.channel_id.has_value() ? 1 : 0);
+      [this](const auto& data) {
+        SetState(data.channel_id.has_value() ? 1 : 0);
       }
     );
   }

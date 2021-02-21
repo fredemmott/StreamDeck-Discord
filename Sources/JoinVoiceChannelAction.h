@@ -9,8 +9,15 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
   static const std::string ACTION_ID;
   using DiscordESDAction::DiscordESDAction;
 
+ private:
+  std::string mChannelId;
  protected:
   virtual void KeyUp(DiscordClient& client) override final {
+    if (client.getCurrentVoiceChannel()->channel_id == mChannelId) {
+      client.setCurrentVoiceChannel("");
+      return;
+    }
+    client.setCurrentVoiceChannel(mChannelId);
   }
 
   virtual int GetDesiredState(const DiscordClient& client) override final {
@@ -19,9 +26,25 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
 
   virtual void Reconnected(DiscordClient& client) override final {
     client.getCurrentVoiceChannel().subscribe(
-      [this](const auto& settings) {
+      [this](const auto& data) {
+        SetState(data.channel_id == mChannelId ? 1 : 0);
       }
     );
+  }
+
+  virtual void DidReceiveSettings(const nlohmann::json& payload) override final {
+    if (!payload.contains("channelId")) {
+      return;
+    }
+
+    payload.at("channelId").get_to(mChannelId);
+    ESDDebug("Got channel: {}", mChannelId);
+    auto client = GetDiscordClient().lock();
+    if (!client) {
+      return;
+    }
+    ESDDebug("Have client, setting state");
+    SetState(client->getCurrentVoiceChannel()->channel_id == mChannelId ? 1 : 0);
   }
 
   virtual void SendToPlugin(const nlohmann::json& payload) override final {

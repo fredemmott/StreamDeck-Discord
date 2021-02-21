@@ -58,7 +58,8 @@
     var uuid,
       actionInfo,
       ctx,
-      globalSettings;
+      globalSettings,
+      actionSettings;
 
     $SD.on('connected', (jsonObj) => connected(jsonObj));
     $SD.on('didReceiveGlobalSettings', (jsonObj) => didReceiveGlobalSettings(jsonObj));
@@ -67,6 +68,7 @@
     function connected(jsonObj) {
       uuid = jsonObj.uuid;
       actionInfo = jsonObj.actionInfo.action;
+      actionSettings = jsonObj.actionInfo.payload.settings;
       ctx = jsonObj.actionInfo.context;
 
       $SD.api.getGlobalSettings(uuid);
@@ -90,6 +92,28 @@
     };
 
     function saveSettings() {
+      saveGlobalSettings();
+
+      if (actionInfo != JOIN_VOICE_CHANNEL_ACTION) {
+        return;
+      }
+      const guild = document.querySelector('#guildInput option:checked');
+      if (!guild) {
+        return;
+      }
+      const guildId = guild.value;
+      const guildName = guild.textContent;
+      const channel = document.querySelector('#channelInput option:checked');
+      if (!channel) {
+        return;
+      }
+      const channelId = channel.value;
+      const channelName = channel.textContent;
+
+      $SD.api.setSettings(uuid, {guildId, guildName, channelId, channelName});
+    }
+
+    function saveGlobalSettings() {
       const appId = document.getElementById('appId').value;
       const appSecret = document.getElementById('appSecret').value;
       if (appId == globalSettings.appId && appSecret == globalSettings.appSecret) {
@@ -128,6 +152,10 @@
           const option = document.createElement('option');
           option.value = guild.id;
           option.textContent = guild.name;
+          if (actionSettings.guildId == guild.id) {
+            option.selected = "selected";
+            actionSettings.guildName = guild.name; // might as well update server names
+          }
           input.appendChild(option);
         });
         document.getElementById('guildItem').classList.remove('hidden');
@@ -145,9 +173,14 @@
           const option = document.createElement('option');
           option.value = channel.id;
           option.textContent = channel.name;
+          if (actionSettings.channelId == channel.id) {
+            option.selected = "selected";
+            actionSettings.channelName = channel.name;
+          }
           select.append(option);
         });
         document.getElementById('channelItem').classList.remove('hidden');
+        saveSettings();
       }
     }
 
