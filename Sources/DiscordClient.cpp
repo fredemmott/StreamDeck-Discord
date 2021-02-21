@@ -128,16 +128,16 @@ void DiscordClient::initializeInCurrentThread() {
     *mIOContext,
     [this, running]() -> asio::awaitable<void> {
       co_await initialize();
+      ESDDebug("Starting worker loop");
       while(*running) {
         nlohmann::json msg;
-        auto success = co_await mConnection->AsyncRead(&msg);
+        const auto success = co_await mConnection->AsyncRead(&msg);
         if (!success) {
           ESDDebug("Failed to read message, closing connection");
           mConnection->Close();
           break;
         }
         processDiscordRPCMessage(msg);
-        ESDDebug("Processed message");
       }
       ESDDebug("Worker loop stopped");
     },
@@ -395,6 +395,7 @@ void DiscordClient::setRpcState(RpcState state) {
     "Changing RPC State: {} => {}", getRpcStateName(mState.rpcState),
     getRpcStateName(state));
   mState.rpcState = state;
+
   if (mStateCallback) {
     mStateCallback(mState);
   }

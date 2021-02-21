@@ -135,8 +135,8 @@ void DiscordStreamDeckPlugin::SendToPlugin(
 }
 
 void DiscordStreamDeckPlugin::ReconnectToDiscord() {
-  mClient.reset();
-  ConnectToDiscord();
+  // Post in to the event loop so it's safe to reset the pointer in callbacks
+  asio::post([this]() { mClient.reset(); ConnectToDiscord(); });
 }
 
 void DiscordStreamDeckPlugin::ConnectToDiscord() {
@@ -183,8 +183,7 @@ void DiscordStreamDeckPlugin::ConnectToDiscord() {
       }
         return;
       case DiscordClient::RpcState::CONNECTION_FAILED:
-        mClient.reset();
-        ConnectToDiscordLater();
+        asio::post([this]() { mClient.reset(); ConnectToDiscordLater(); });
         return;
       case DiscordClient::RpcState::DISCONNECTED:
         ESDLog("Disconnected from Discord");
