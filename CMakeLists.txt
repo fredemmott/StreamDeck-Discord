@@ -3,14 +3,8 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-project(com.fredemmott.discord.sdPlugin VERSION 4.0.3 LANGUAGES CXX)
+project(com.fredemmott.discord.sdPlugin VERSION 4.0.4 LANGUAGES CXX)
 
-if (APPLE)
-  set(
-    STREAMDECK_PLUGIN_DIR
-    "$ENV{HOME}/Library/ApplicationSupport/com.elgato.StreamDeck/Plugins"
-  )
-endif()
 set(
   CMAKE_INSTALL_PREFIX
   "${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}"

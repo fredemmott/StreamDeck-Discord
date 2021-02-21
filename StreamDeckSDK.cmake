@@ -2,9 +2,10 @@ include(ExternalProject)
 
 ExternalProject_Add(
   StreamDeckSDK_build
-  URL https://github.com/fredemmott/StreamDeck-CPPSDK/releases/download/v2.0-rc12/StreamDeckSDK-v2.0-rc12.zip
-  URL_HASH SHA512=20ec106e3c62c82793d9f8cb8f43d2183d6d534605c13010e79b485d4137836d262b8c5620c79c6a89b7009e66a619a8dab977ef8837a93520adb40c612243f8
+  URL https://github.com/fredemmott/StreamDeck-CPPSDK/releases/download/v2.0.1/StreamDeckSDK-v2.0.1.zip
+  URL_HASH SHA512=1d83d072d3c8be63394150aab3c42de6716d8d22acd4c696ffbe86a7da2e3b38a9cbbc968b3f021d9385d36c95d72b58cff78e30dafc44a68bb22300a8861290
   CMAKE_ARGS
+    -DBUILD_LIB_ONLY=ON
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}
     -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
@@ -25,3 +26,25 @@ target_link_libraries(
 )
 target_include_directories(StreamDeckSDK INTERFACE ${INSTALL_DIR}/include)
 target_compile_definitions(StreamDeckSDK INTERFACE -DASIO_STANDALONE=1)
+
+if(APPLE)
+  set(
+    STREAMDECK_PLUGIN_DIR
+    "$ENV{HOME}/Library/ApplicationSupport/com.elgato.StreamDeck/Plugins"
+  )
+elseif(WIN32)
+  string(
+    REPLACE
+    "\\"
+    "/"
+    STREAMDECK_PLUGIN_DIR
+    "$ENV{appdata}/Elgato/StreamDeck/Plugins"
+  )
+elseif(UNIX AND NOT APPLE)
+  target_link_libraries(StreamDeckSDK INTERFACE pthread)
+endif()
+set(
+  STREAMDECK_PLUGIN_DIR
+  ${STREAMDECK_PLUGIN_DIR}
+  CACHE PATH "Path to this system's streamdeck plugin directory"
+)
