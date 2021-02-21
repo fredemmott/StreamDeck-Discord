@@ -75,7 +75,25 @@
       $SD.api.sendToPlugin(uuid, actionInfo, {event: "com.fredemmott.discord.rpc.getState"});
       console.log('connected', jsonObj, actionInfo);
       if (actionInfo == JOIN_VOICE_CHANNEL_ACTION) {
-        console.log('requesting guilds');
+        if (actionSettings.channelId) {
+          const guilds = document.getElementById('guildInput');
+          const guild = document.createElement('option');
+          guild.value = actionSettings.guildId;
+          guild.textContent = actionSettings.guildName;
+          guild.selected = 'selected';
+          guilds.append(guild);
+
+          const channels = document.getElementById('channelInput');
+          const channel = document.createElement('option');
+          channel.value = actionSettings.channelId;
+          channel.textContent = actionSettings.channelName;
+          channel.selected = 'selected';
+          channels.append(channel);
+
+          document.getElementById('guildItem').classList.remove('hidden');
+          document.getElementById('channelItem').classList.remove('hidden');
+        }
+        console.log('requesting guild/channel info');
         $SD.api.sendToPlugin(uuid, actionInfo, {event: "getDiscordGuilds"});
       }
     };
