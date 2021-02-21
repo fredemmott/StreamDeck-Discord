@@ -30,14 +30,14 @@ void DiscordESDAction::WillAppear(const nlohmann::json&) {
   SetState(GetDesiredState(*client));
 }
 
-void DiscordESDAction::KeyUp(const nlohmann::json&) {
+void DiscordESDAction::KeyUp(const nlohmann::json& settings) {
   auto client = mDiscordClient.lock();
   if (!client) {
     ShowAlert();
     return;
   }
 
-  KeyUp(*client);
+  KeyUp(settings, *client);
 }
 
 void DiscordESDAction::SetDiscordClient(

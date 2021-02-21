@@ -8,7 +8,7 @@ class SelfMuteToggleAction final : public DiscordVoiceSettingsAction {
   static const std::string ACTION_ID;
 
  protected:
-  virtual void KeyUp(DiscordClient& client) override {
+  virtual void KeyUp(const nlohmann::json&, DiscordClient& client) override {
     auto& settings = client.getVoiceSettings();
     client.setIsMuted(!(settings->deaf || settings->mute));
   }

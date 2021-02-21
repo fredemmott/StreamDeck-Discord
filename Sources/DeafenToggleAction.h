@@ -8,7 +8,7 @@ class DeafenToggleAction final : public DiscordVoiceSettingsAction {
   static const std::string ACTION_ID;
 
  protected:
-  virtual void KeyUp(DiscordClient& client) override {
+  virtual void KeyUp(const nlohmann::json&, DiscordClient& client) override {
     client.setIsDeafened(!client.getVoiceSettings()->deaf);
   }
 

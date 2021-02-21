@@ -9,7 +9,7 @@ class HangupAction final : public DiscordESDAction {
   using DiscordESDAction::DiscordESDAction;
 
  protected:
-  virtual void KeyUp(DiscordClient& client) override final {
+  virtual void KeyUp(const nlohmann::json&, DiscordClient& client) override final {
     client.setCurrentVoiceChannel(std::string());
   }
 

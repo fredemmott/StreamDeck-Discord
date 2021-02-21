@@ -12,7 +12,12 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
  private:
   std::string mChannelId;
  protected:
-  virtual void KeyUp(DiscordClient& client) override final {
+  virtual void KeyUp(const nlohmann::json& settings, DiscordClient& client) override final {
+    if (!settings.contains("channelId")) {
+      return;
+    }
+    settings.at("channelId").get_to(mChannelId);
+
     if (client.getCurrentVoiceChannel()->channel_id == mChannelId) {
       client.setCurrentVoiceChannel("");
       return;

@@ -26,7 +26,7 @@ class DiscordESDAction : public ESDAction {
    virtual int GetDesiredState(const DiscordClient&) = 0;
    virtual std::weak_ptr<DiscordClient> GetDiscordClient();
 
-   virtual void KeyUp(DiscordClient&) = 0;
+   virtual void KeyUp(const nlohmann::json&, DiscordClient&) = 0;
    virtual void Reconnected(DiscordClient&) = 0;
   private:
    std::weak_ptr<DiscordClient> mDiscordClient;
