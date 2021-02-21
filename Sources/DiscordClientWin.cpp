@@ -74,22 +74,14 @@ void CALLBACK internet_status_callback(
   ctx->seen.insert(dwInternetStatus);
 }
 
-}// namespace
-
-std::string DiscordClient::getNextNonce() {
-  UUID uuid;
-  UuidCreate(&uuid);
-  RPC_CSTR rpcstr;
-  UuidToStringA(&uuid, &rpcstr);
-  const std::string ret((char*)rpcstr);
-  RpcStringFreeA(&rpcstr);
-  return ret;
-}
-
-asio::awaitable<DiscordClient::Credentials> DiscordClient::coGetOAuthCredentials(
-  const std::string& grantType,
-  const std::string& secretType,
-  const std::string& secret) {
+asio::awaitable<nlohmann::json> co_http_post(
+  const std::string& host,
+  const uint32_t port,
+  const std::string& path,
+  const DWORD flags,
+  const std::string& headers,
+  const std::string& post_data
+) {
   if (!hInternet) {
     ESDDebug("Calling InternetOpen");
     hInternet = InternetOpenA(
@@ -98,37 +90,26 @@ asio::awaitable<DiscordClient::Credentials> DiscordClient::coGetOAuthCredentials
     InternetSetStatusCallback(hInternet, &internet_status_callback);
   }
 
-  AwaitablePromise<void> p(*mIOContext);
   InternetCallbackContext ctx;
 
   ESDDebug("Calling InternetConnectA");
   auto hConnection = InternetConnectA(
-    hInternet, "discordapp.com", INTERNET_DEFAULT_HTTPS_PORT, nullptr, nullptr,
+    hInternet, host.c_str(), port, nullptr, nullptr,
     INTERNET_SERVICE_HTTP,
-    INTERNET_FLAG_SECURE,// HTTPS please
+    flags,
     reinterpret_cast<DWORD_PTR>(&ctx));
-  ESDDebug("Waiting!");
   co_await ctx.async_wait_for(INTERNET_STATUS_HANDLE_CREATED);
   ESDDebug("Calling HttpOpenRequestA");
 
   auto hRequest = HttpOpenRequestA(
-    hConnection, "POST", "/api/oauth2/token", nullptr, nullptr, nullptr,
-    INTERNET_FLAG_SECURE, reinterpret_cast<DWORD_PTR>(&ctx));
+    hConnection, "POST", path.c_str(), nullptr, nullptr, nullptr,
+    flags, reinterpret_cast<DWORD_PTR>(&ctx));
 
-  const auto headers
-    = "Content-Type: application/x-www-form-urlencoded\r\nHost: "
-      "discordapp.com";
-  HttpAddRequestHeadersA(
-    hRequest, headers, -1, HTTP_ADDREQ_FLAG_ADD);
-  std::stringstream ss;
-  ss << "grant_type=" << urlencode(grantType) << "&" << urlencode(secretType)
-     << "=" << urlencode(secret) << "&client_id=" << urlencode(mAppId)
-     << "&client_secret=" << urlencode(mAppSecret);
-  const auto postData = ss.str();
+  HttpAddRequestHeadersA(hRequest, headers.c_str(), headers.length(), HTTP_ADDREQ_FLAG_ADD);
 
   ESDDebug("Sending request");
   HttpSendRequestA(
-    hRequest, nullptr, 0, (void*)postData.c_str(), postData.length());
+    hRequest, nullptr, 0, (void*)post_data.c_str(), post_data.length());
 
   ESDDebug("---Waiting for sendrequest");
 
@@ -146,12 +127,43 @@ asio::awaitable<DiscordClient::Credentials> DiscordClient::coGetOAuthCredentials
   ESDDebug("---InternetCloseHandle");
   InternetCloseHandle(hRequest);
 
-  ESDDebug("received credentials");
-  const json parsed = json::parse(response);
-  ESDDebug("parsed");
-  mCredentials.accessToken
-    = EPLJSONUtils::GetStringByName(parsed, "access_token");
-  mCredentials.refreshToken
-    = EPLJSONUtils::GetStringByName(parsed, "refresh_token");
+  ESDDebug("received response");
+  co_return json::parse(response);
+}
+
+}// namespace
+
+std::string DiscordClient::getNextNonce() {
+  UUID uuid;
+  UuidCreate(&uuid);
+  RPC_CSTR rpcstr;
+  UuidToStringA(&uuid, &rpcstr);
+  const std::string ret((char*)rpcstr);
+  RpcStringFreeA(&rpcstr);
+  return ret;
+}
+
+asio::awaitable<DiscordClient::Credentials> DiscordClient::coGetOAuthCredentials(
+  const std::string& grantType,
+  const std::string& secretType,
+  const std::string& secret) {
+  auto json = co_await co_http_post(
+    "discordapp.com",
+    INTERNET_DEFAULT_HTTPS_PORT,
+    "/api/oauth2/token",
+    INTERNET_FLAG_SECURE,
+    "Content-Type: application/x-www-form-urlencoded\r\nHost: discordapp.com",
+    fmt::format(
+      "grant_type={}&client_id={}&client_secret={}&{}={}",
+      urlencode(grantType),
+      urlencode(mAppId),
+      urlencode(mAppSecret),
+      urlencode(secretType),
+      urlencode(secret)
+    )
+  );
+  ESDDebug("Received credentials");
+  json["access_token"].get_to(mCredentials.accessToken);
+  json["refresh_token"].get_to(mCredentials.refreshToken);
   co_return mCredentials;
 }
