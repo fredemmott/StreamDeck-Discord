@@ -5,6 +5,9 @@
   <title>com.fredemmott.discord PI</title>
   <meta charset="utf-8" />
   <link rel="stylesheet" href="css/sdpi.css">
+  <style type="text/css">
+    .hidden { display: none !important; }
+  </style>
 </head>
 
 <body>
@@ -17,11 +20,11 @@
       <div class="sdpi-item-label">App Secret</div>
       <input class="sdpi-item-value" type="password" id="appSecret" onchange="saveSettings();" required />
     </div>
-    <div class="sdpi-item" id="guildItem">
+    <div class="sdpi-item hidden" id="guildItem">
       <div class="sdpi-item-label">Server</div>
       <select class="sdpi-item-value select" id="guildInput" onchange="guildChanged()"></select>
     </div>
-    <div class="sdpi-item" id="channelItem">
+    <div class="sdpi-item hidden" id="channelItem">
       <div class="sdpi-item-label">Channel</div>
       <select class="sdpi-item-value select" id="channelInput" onchange="saveSettings()"></select>
     </div>
@@ -122,6 +125,9 @@
           option.textContent = guild.name;
           input.appendChild(option);
         });
+        document.getElementById('guildItem').classList.remove('hidden');
+        // fetch the channels for the top-most item
+        guildChanged();
         return;
       }
 
@@ -136,6 +142,7 @@
           option.textContent = channel.name;
           select.append(option);
         });
+        document.getElementById('channelItem').classList.remove('hidden');
       }
     }
 
@@ -144,6 +151,7 @@
       while (channel_select.firstChild) {
         channel_select.removeChild(channel_select.firstChild);
       }
+      document.getElementById('channelItem').classList.remove('hidden');
       const guild_id = document.getElementById('guildInput').value;
       $SD.api.sendToPlugin(uuid, actionInfo, {
         "event": "getGuildChannels",
