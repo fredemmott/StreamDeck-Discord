@@ -18,7 +18,6 @@ Installation and demo video: https://youtu.be/MSMbRtj2fFA
 1. Go to [the Discord developer portal](https://discordapp.com/developers), and create an application
 1. Go to 'OAuth2' on the left hand side
 1. Add `https://localhost/` as a redirect URI
-1. go back to 'General Information'
 1. copy the client ID and paste it into 'app ID' in the StreamDeck button properties
 1. copy the client secret and paste it into 'app secret' in the StreamDeck button properties
 1. Discord should now ask you for permission a few times, then you're done :)
