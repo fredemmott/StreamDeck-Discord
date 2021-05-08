@@ -48,3 +48,14 @@ set(
   ${STREAMDECK_PLUGIN_DIR}
   CACHE PATH "Path to this system's streamdeck plugin directory"
 )
+
+function(set_default_install_dir_to_streamdeck_plugin_dir)
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(
+      CMAKE_INSTALL_PREFIX
+      "${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}"
+      CACHE PATH "See cmake documentation"
+      FORCE
+    )
+  endif()
+endfunction()

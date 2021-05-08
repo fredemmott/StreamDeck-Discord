@@ -5,12 +5,6 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 project(com.fredemmott.discord.sdPlugin VERSION 4.0.4 LANGUAGES CXX)
 
-set(
-  CMAKE_INSTALL_PREFIX
-  "${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}"
-  CACHE STRING "See cmake documentation"
-)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -28,6 +22,8 @@ include_directories("${CMAKE_SOURCE_DIR}")
 add_compile_definitions(JSON_USE_IMPLICIT_CONVERSIONS=0)
 
 include("StreamDeckSDK.cmake")
+set_default_install_dir_to_streamdeck_plugin_dir()
+
 include("sign_target.cmake")
 
 
