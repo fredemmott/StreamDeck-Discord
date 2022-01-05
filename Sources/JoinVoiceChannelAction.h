@@ -26,7 +26,7 @@ class JoinVoiceChannelAction final : public DiscordESDAction {
   }
 
   virtual int GetDesiredState(const DiscordClient& client) override final {
-    return 0;
+    return client.getCurrentVoiceChannel()->channel_id == mChannelId ? 1 : 0;
   }
 
   virtual void Reconnected(DiscordClient& client) override final {
