@@ -24,7 +24,7 @@ target_link_libraries(
   ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}DPP${CMAKE_STATIC_LIBRARY_SUFFIX}
   "${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt$<$<CONFIG:Debug>:d>${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
-target_include_directories(DPP INTERFACE ${INSTALL_DIR}/include)
+target_include_directories(DPP INTERFACE ${INSTALL_DIR}/include/dpp-9.0/)
 target_compile_definitions(DPP INTERFACE -DASIO_STANDALONE=1)
 
 if(APPLE)

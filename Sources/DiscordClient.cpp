@@ -1,5 +1,6 @@
 #include "DiscordClient.h"
 
+#include <dpp/dpp.h>
 #include <StreamDeckSDK/EPLJSONUtils.h>
 #include <StreamDeckSDK/ESDLogger.h>
 
