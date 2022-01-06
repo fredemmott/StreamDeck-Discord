@@ -22,11 +22,10 @@ include_directories("${CMAKE_SOURCE_DIR}")
 add_compile_definitions(JSON_USE_IMPLICIT_CONVERSIONS=0)
 
 include("StreamDeckSDK.cmake")
+include("DPP.cmake")
 set_default_install_dir_to_streamdeck_plugin_dir()
 
 include("sign_target.cmake")
 
-
-add_subdirectory(DiscordRPCSDK)
 add_subdirectory(Sources)
 add_subdirectory(sdplugin)

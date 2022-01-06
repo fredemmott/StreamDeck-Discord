@@ -5,3 +5,4 @@ xcuserdata
 .*.swp
 .vscode/
 build/
+build-dir

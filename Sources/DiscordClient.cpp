@@ -1,6 +1,5 @@
 #include "DiscordClient.h"
 
-#include <DiscordRPCSDK/rpc_connection.h>
 #include <StreamDeckSDK/EPLJSONUtils.h>
 #include <StreamDeckSDK/ESDLogger.h>
 
