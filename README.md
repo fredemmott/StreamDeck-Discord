@@ -1,3 +1,9 @@
+# THIS PLUGIN IS NO LONGER MAINTAINED, USE ELGATO'S PLUGIN INSTEAD
+
+https://apps.elgato.com/plugins/com.elgato.discord
+
+-----
+
 ![Continuous Integration](https://github.com/fredemmott/StreamDeck-Discord/workflows/Continuous%20Integration/badge.svg)
 
 # StreamDeck-Discord
